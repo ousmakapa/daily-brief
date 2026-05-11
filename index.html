@@ -256,10 +256,8 @@
       text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;
     }
 
-    .article-ai-wrap {
-      margin-top: 12px; padding-top: 12px;
-      border-top: 1px solid var(--border);
-      display: flex; flex-direction: column; gap: 10px;
+    .article-ai-section-wrap {
+      padding-top: 2px;
     }
     .article-ai-section {}
     .article-ai-label {
@@ -762,7 +760,7 @@ async function fetchNews(topic) {
     .filter(r => r.status === 'fulfilled')
     .flatMap(r => r.value)
     .filter(a => { if (seen.has(a.title)) return false; seen.add(a.title); return true; })
-    .slice(0, 10);
+    .slice(0, 6);
 }
 
 async function fetchFeed(url) {
