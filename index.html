@@ -737,14 +737,23 @@ function setCheckNowLoading(on) {
 async function fetchAndRender(topic) {
   try {
     let articles = await fetchNews(topic);
-    const { summary, articleSummaries } = await generateAIContent(topic, articles);
-    articles = articles.map((a, i) => ({ ...a, aiSummary: articleSummaries[i] || null }));
+    // Batch AI calls: 6 articles per batch so every article gets a summary
+    const BATCH = 6;
+    let allSummaries = [];
+    let overallSummary = null;
+    for (let i = 0; i < articles.length; i += BATCH) {
+      const batch = articles.slice(i, i + BATCH);
+      const { summary, articleSummaries } = await generateAIContent(topic, batch, i === 0);
+      if (i === 0) overallSummary = summary;
+      allSummaries = allSummaries.concat(articleSummaries);
+    }
+    articles = articles.map((a, i) => ({ ...a, aiSummary: allSummaries[i] || null }));
     const ts = Date.now();
-    cache[topic] = { ts, articles, summary };
+    cache[topic] = { ts, articles, summary: overallSummary };
     saveCache();
-    saveToArchive(topic, articles, summary);
+    saveToArchive(topic, articles, overallSummary);
     renderDateStrip();
-    renderAll(topic, articles, summary, ts);
+    renderAll(topic, articles, overallSummary, ts);
   } catch (err) {
     console.error(err);
     renderError();
@@ -753,14 +762,26 @@ async function fetchAndRender(topic) {
 
 // ─── News fetching ────────────────────────────────────────────────────────────
 
+function isToday(dateStr) {
+  if (!dateStr) return true; // keep articles with no date
+  try {
+    const d = new Date(dateStr);
+    const now = new Date();
+    // Keep articles from last 24 hours
+    return (now - d) < 24 * 60 * 60 * 1000;
+  } catch { return true; }
+}
+
 async function fetchNews(topic) {
   const results = await Promise.allSettled(TOPICS[topic].feeds.map(fetchFeed));
   const seen = new Set();
-  return results
+  const all = results
     .filter(r => r.status === 'fulfilled')
     .flatMap(r => r.value)
-    .filter(a => { if (seen.has(a.title)) return false; seen.add(a.title); return true; })
-    .slice(0, 6);
+    .filter(a => { if (seen.has(a.title)) return false; seen.add(a.title); return true; });
+  // Prefer today's articles, fall back to all if not enough
+  const todayArticles = all.filter(a => isToday(a.date));
+  return (todayArticles.length >= 4 ? todayArticles : all).slice(0, 20);
 }
 
 async function fetchFeed(url) {
@@ -776,7 +797,7 @@ async function fetchFeed(url) {
       const xml = new DOMParser().parseFromString(text, 'text/xml');
       const channelTitle = xml.querySelector('channel > title')?.textContent
         || new URL(url).hostname.replace('www.', '');
-      const items = Array.from(xml.querySelectorAll('item')).slice(0, 8);
+      const items = Array.from(xml.querySelectorAll('item')).slice(0, 15);
       const results = items.map(item => {
         // Prefer full content over short description
         const fullContent = item.querySelector('encoded')?.textContent
@@ -821,12 +842,12 @@ function formatTs(ts) {
 
 // ─── OpenAI: category brief + per-article summaries in one call ───────────────
 
-async function generateAIContent(topic, articles) {
+async function generateAIContent(topic, articles, includeBrief = false) {
   const key = getApiKey();
   const empty = { summary: null, articleSummaries: [] };
   if (!key || !articles.length) return empty;
 
-  const aiArticles = articles.slice(0, 6);
+  const aiArticles = articles; // caller already passes the right batch
   const articleBlock = aiArticles.map((a, i) =>
     `[${i + 1}] "${a.title}"\n${a.description ? a.description.slice(0, 200) : 'No description'}`
   ).join('\n\n');
@@ -843,11 +864,11 @@ async function generateAIContent(topic, articles) {
             role: 'system',
             content: `You are a sharp senior news analyst. Return ONLY valid JSON with this exact shape:
 {
-  "brief": {
+  ${includeBrief ? `"brief": {
     "headline": "One sentence — the single most important story happening today in this topic.",
     "overview": "3-4 sentences connecting the day's top stories — what is happening, who is involved, and why these stories matter together.",
     "outlook": "1-2 sentences on what to watch next or why this moment is significant."
-  },
+  },` : '"brief": null,'}
   "articles": [
     {
       "what": "2 sentences: exactly what happened, who is involved, key facts and numbers.",
