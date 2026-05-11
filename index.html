@@ -216,8 +216,8 @@
       border-top: 1px solid var(--border);
     }
     .article-ai-text {
-      font-size: 14px; line-height: 1.7;
-      color: rgba(240,240,248,0.85);
+      font-size: 14px; line-height: 1.75;
+      color: rgba(240,240,248,0.9);
     }
     .article-ai-loading {
       font-size: 12px; color: var(--text2); opacity: 0.5;
@@ -785,16 +785,16 @@ async function generateAIContent(topic, articles) {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 1200,
+        max_tokens: 2000,
         messages: [
           {
             role: 'system',
-            content: `You are a sharp news analyst. Return ONLY valid JSON with this exact shape:
+            content: `You are a sharp senior news analyst. Return ONLY valid JSON with this exact shape:
 {
-  "brief": "3-4 sentence overview that tells me what is happening today in this topic and why it matters",
-  "articles": ["2-3 sentence explanation for article 1 — what happened, why it matters, what it means going forward", "same for article 2", ...]
+  "brief": "A structured daily briefing with 3 parts separated by \\n\\n: (1) A bold opening sentence stating the single biggest story of the day. (2) 3-4 sentences covering what is happening across the other top stories, with context and connections between them. (3) A final sentence on what to watch next or why this moment matters.",
+  "articles": ["For each article: 3-4 sentences. Sentence 1: what exactly happened. Sentence 2: the background/context that makes this significant. Sentence 3: what this means or what happens next. Be specific — names, numbers, places when available.", "same structure for article 2", ...]
 }
-Rules: write like you are explaining to a smart friend — be clear, direct, and insightful. Never just repeat the headline. Always explain the context and significance. No bullet points, no markdown.`,
+Rules: write like The Economist — precise, insightful, no fluff. Never repeat the headline word for word. Use specific details. Explain the 'so what'. Plain text only, no markdown symbols.`,
           },
           {
             role: 'user',
@@ -846,7 +846,7 @@ function showSkeletons() {
 function renderSummary(topic, text) {
   const el = document.getElementById('summary-content');
   el.innerHTML = text
-    ? `<p class="summary-text">${text}</p>`
+    ? text.split('\n\n').map(p => `<p class="summary-text" style="margin-bottom:10px">${p.trim()}</p>`).join('')
     : `<p class="summary-text" style="opacity:0.45">${getApiKey() ? 'Could not generate summary.' : 'Add your OpenAI key in ⚙️ to get AI summaries.'}</p>`;
 }
 
