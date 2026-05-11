@@ -23,6 +23,7 @@
       --shoes: #f59e0b;
       --biz: #3b82f6;
       --viral: #ec4899;
+      --dent: #06b6d4;
       --radius: 16px;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -84,6 +85,7 @@
     .tab[data-topic="shoes"].active  { background: var(--shoes); }
     .tab[data-topic="biz"].active    { background: var(--biz); }
     .tab[data-topic="viral"].active  { background: var(--viral); }
+    .tab[data-topic="dent"].active   { background: var(--dent); }
 
     /* ── Date strip ── */
     .date-strip {
@@ -114,6 +116,7 @@
     .summary-card[data-topic="shoes"] { background: linear-gradient(135deg,#4a3000,#1a1200); border:1px solid #f59e0b44; }
     .summary-card[data-topic="biz"]   { background: linear-gradient(135deg,#0d2b5e,#0a0f1a); border:1px solid #3b82f644; }
     .summary-card[data-topic="viral"] { background: linear-gradient(135deg,#4a0a2e,#1a0a18); border:1px solid #ec489944; }
+    .summary-card[data-topic="dent"]  { background: linear-gradient(135deg,#043a42,#0a1518); border:1px solid #06b6d444; }
 
     .summary-label {
       font-size: 11px; font-weight: 700; letter-spacing: 1px;
@@ -125,6 +128,7 @@
     .summary-card[data-topic="shoes"] .summary-label { color: var(--shoes); }
     .summary-card[data-topic="biz"]   .summary-label { color: var(--biz); }
     .summary-card[data-topic="viral"] .summary-label { color: var(--viral); }
+    .summary-card[data-topic="dent"]  .summary-label { color: var(--dent); }
 
     .summary-text { font-size: 15px; line-height: 1.65; color: rgba(255,255,255,0.9); }
 
@@ -156,6 +160,7 @@
     .check-now-btn[data-topic="shoes"] { background: var(--shoes); color: #000; }
     .check-now-btn[data-topic="biz"]   { background: var(--biz);   color: #fff; }
     .check-now-btn[data-topic="viral"] { background: var(--viral); color: #fff; }
+    .check-now-btn[data-topic="dent"]  { background: var(--dent);  color: #000; }
 
     .spin { display: inline-block; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -191,12 +196,12 @@
     [data-topic="shoes"] .article-source { color: var(--shoes); }
     [data-topic="biz"]   .article-source { color: var(--biz); }
     [data-topic="viral"] .article-source { color: var(--viral); }
+    [data-topic="dent"]  .article-source { color: var(--dent); }
 
     .article-title { font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--text); margin-bottom: 8px; }
     .article-desc {
-      font-size: 13px; color: var(--text2); line-height: 1.5;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-      overflow: hidden; margin-bottom: 10px;
+      font-size: 13px; color: var(--text2); line-height: 1.65;
+      margin-bottom: 10px;
     }
     .article-meta { font-size: 11px; color: var(--text2); opacity: 0.6; }
 
@@ -307,6 +312,7 @@
   <button class="tab"        data-topic="shoes" onclick="switchTab('shoes')">👟 Sneakers</button>
   <button class="tab"        data-topic="biz"   onclick="switchTab('biz')">💼 Business</button>
   <button class="tab"        data-topic="viral" onclick="switchTab('viral')">🔥 Viral</button>
+  <button class="tab"        data-topic="dent"  onclick="switchTab('dent')">🦷 Dentistry</button>
 </div>
 
 <!-- Refresh All button -->
@@ -479,6 +485,14 @@ const TOPICS = {
       'https://mashable.com/feeds/rss/all',
     ],
     summaryPrompt: 'Summarize the top marketing trends, viral content ideas, and social media news today in 3-4 sentences. Focus on what is trending and creative campaign ideas.',
+  },
+  dent: {
+    label: 'Dentistry', emoji: '🦷',
+    feeds: [
+      'https://news.google.com/rss/search?q=dentistry+dental+oral+health&hl=en-US&gl=US&ceid=US:en',
+      'https://www.dentistrytoday.com/feed/',
+    ],
+    summaryPrompt: 'Summarize the top dentistry and oral health news today in 3-4 clear, easy-to-understand sentences. Cover new treatments, research, technology, or industry updates.',
   },
 };
 
@@ -680,14 +694,21 @@ async function fetchFeed(url) {
       const channelTitle = xml.querySelector('channel > title')?.textContent
         || new URL(url).hostname.replace('www.', '');
       const items = Array.from(xml.querySelectorAll('item')).slice(0, 8);
-      const results = items.map(item => ({
-        title:       stripHtml(item.querySelector('title')?.textContent || ''),
-        description: stripHtml(item.querySelector('description')?.textContent || '').slice(0, 200),
-        link:        item.querySelector('link')?.textContent?.trim()
-                     || item.querySelector('guid')?.textContent?.trim() || '#',
-        source:      channelTitle,
-        date:        item.querySelector('pubDate')?.textContent || '',
-      })).filter(a => a.title);
+      const results = items.map(item => {
+        // Prefer full content over short description
+        const fullContent = item.querySelector('encoded')?.textContent
+          || item.querySelector('content')?.textContent
+          || item.querySelector('description')?.textContent || '';
+        const desc = stripHtml(fullContent).replace(/\s+/g,' ').trim().slice(0, 600);
+        return {
+          title:       stripHtml(item.querySelector('title')?.textContent || ''),
+          description: desc,
+          link:        item.querySelector('link')?.textContent?.trim()
+                       || item.querySelector('guid')?.textContent?.trim() || '#',
+          source:      channelTitle,
+          date:        item.querySelector('pubDate')?.textContent || '',
+        };
+      }).filter(a => a.title);
       if (results.length) return results;
     } catch { continue; }
   }
