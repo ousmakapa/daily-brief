@@ -689,7 +689,7 @@ function setCheckNowLoading(on) {
 
 async function fetchAndRender(topic) {
   try {
-    const articles = await fetchNews(topic);
+    let articles = await fetchNews(topic);
     const { summary, articleSummaries } = await generateAIContent(topic, articles);
     articles = articles.map((a, i) => ({ ...a, aiSummary: articleSummaries[i] || null }));
     const ts = Date.now();
