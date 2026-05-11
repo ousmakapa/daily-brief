@@ -424,39 +424,39 @@ const TOPICS = {
   ai: {
     label: 'AI', emoji: '🤖',
     feeds: [
+      'https://news.google.com/rss/search?q=artificial+intelligence+machine+learning&hl=en-US&gl=US&ceid=US:en',
       'https://techcrunch.com/category/artificial-intelligence/feed/',
-      'https://www.artificialintelligence-news.com/feed/',
     ],
     summaryPrompt: 'Summarize the top AI and machine learning news from today in 3-4 engaging sentences. Focus on the most impactful developments.',
   },
   nba: {
     label: 'NBA', emoji: '🏀',
     feeds: [
+      'https://news.google.com/rss/search?q=NBA+basketball&hl=en-US&gl=US&ceid=US:en',
       'https://www.espn.com/espn/rss/nba/news',
-      'https://bleacherreport.com/nba.rss',
     ],
     summaryPrompt: 'Summarize the top NBA news and highlights from today in 3-4 engaging sentences. Include key games, trades, or player news.',
   },
   padel: {
     label: 'Padel', emoji: '🎾',
     feeds: [
-      'https://www.worldpadeltour.com/en/feed/',
-      'https://padel-magazine.com/feed/',
+      'https://news.google.com/rss/search?q=padel+sport+tournament&hl=en-US&gl=US&ceid=US:en',
+      'https://www.tennismajors.com/padel/feed/',
     ],
     summaryPrompt: 'Summarize the top padel news from today in 3-4 engaging sentences. Include tournament results, player news, or industry updates.',
   },
   shoes: {
     label: 'Sneakers', emoji: '👟',
     feeds: [
+      'https://news.google.com/rss/search?q=Nike+Adidas+Jordan+sneakers+release&hl=en-US&gl=US&ceid=US:en',
       'https://sneakernews.com/feed/',
-      'https://www.highsnobiety.com/sneakers/rss/',
     ],
     summaryPrompt: 'Summarize the top sneaker news today in 3-4 sentences. Cover Nike, Adidas, Jordan, and other major drops or collabs.',
   },
   biz: {
     label: 'Business', emoji: '💼',
     feeds: [
-      'https://feeds.feedburner.com/entrepreneur/latest',
+      'https://news.google.com/rss/search?q=business+startup+finance+economy&hl=en-US&gl=US&ceid=US:en',
       'https://www.cnbc.com/id/10001147/device/rss/rss.html',
     ],
     summaryPrompt: 'Summarize the top business and finance news today in 3-4 engaging sentences. Focus on markets, startups, and major corporate news.',
@@ -464,14 +464,18 @@ const TOPICS = {
   viral: {
     label: 'Viral', emoji: '🔥',
     feeds: [
-      'https://www.socialmediatoday.com/rss.xml',
-      'https://www.adweek.com/feed/',
+      'https://news.google.com/rss/search?q=viral+marketing+trends+social+media+content&hl=en-US&gl=US&ceid=US:en',
+      'https://mashable.com/feeds/rss/all',
     ],
     summaryPrompt: 'Summarize the top marketing trends, viral content ideas, and social media news today in 3-4 sentences. Focus on what is trending and creative campaign ideas.',
   },
 };
 
-const RSS2JSON   = 'https://api.rss2json.com/v1/api.json?count=8&rss_url=';
+const PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
 const CACHE_KEY  = 'daily_brief_v2';
 const ARCHIVE_KEY = 'daily_brief_archive';
 const CACHE_TTL  = 7 * 24 * 60 * 60 * 1000;
@@ -652,17 +656,31 @@ async function fetchNews(topic) {
 }
 
 async function fetchFeed(url) {
-  const resp = await fetch(RSS2JSON + encodeURIComponent(url));
-  if (!resp.ok) throw new Error('Feed failed');
-  const data = await resp.json();
-  if (data.status !== 'ok') throw new Error('Feed error');
-  return data.items.map(item => ({
-    title: stripHtml(item.title || ''),
-    description: stripHtml(item.description || item.content || '').slice(0, 200),
-    link: item.link || '#',
-    source: data.feed?.title || new URL(url).hostname.replace('www.', ''),
-    date: item.pubDate,
-  }));
+  for (const proxyFn of PROXIES) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 9000);
+      const resp = await fetch(proxyFn(url), { signal: controller.signal });
+      clearTimeout(timer);
+      if (!resp.ok) continue;
+      const text = await resp.text();
+      if (!text.includes('<item')) continue;
+      const xml = new DOMParser().parseFromString(text, 'text/xml');
+      const channelTitle = xml.querySelector('channel > title')?.textContent
+        || new URL(url).hostname.replace('www.', '');
+      const items = Array.from(xml.querySelectorAll('item')).slice(0, 8);
+      const results = items.map(item => ({
+        title:       stripHtml(item.querySelector('title')?.textContent || ''),
+        description: stripHtml(item.querySelector('description')?.textContent || '').slice(0, 200),
+        link:        item.querySelector('link')?.textContent?.trim()
+                     || item.querySelector('guid')?.textContent?.trim() || '#',
+        source:      channelTitle,
+        date:        item.querySelector('pubDate')?.textContent || '',
+      })).filter(a => a.title);
+      if (results.length) return results;
+    } catch { continue; }
+  }
+  return [];
 }
 
 function stripHtml(h) {
