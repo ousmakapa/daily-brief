@@ -309,6 +309,17 @@
   <button class="tab"        data-topic="viral" onclick="switchTab('viral')">🔥 Viral</button>
 </div>
 
+<!-- Refresh All button -->
+<div style="padding: 0 16px 12px;">
+  <button id="refresh-all-btn" onclick="refreshAllSections()" style="
+    width:100%; padding:13px; border-radius:14px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--text); font-size:15px; font-weight:700;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+    <span id="refresh-all-icon">↻</span>
+    <span id="refresh-all-label">Refresh All Sections</span>
+  </button>
+</div>
+
 <!-- Date strip -->
 <div class="date-strip" id="date-strip"></div>
 
@@ -788,6 +799,41 @@ function openInfo()     { document.getElementById('info-overlay').classList.add(
 function closeOverlay(e, id) {
   if (e.target === document.getElementById(id))
     document.getElementById(id).classList.remove('open');
+}
+
+async function refreshAllSections() {
+  if (isFetching) return;
+  isFetching = true;
+  const icon  = document.getElementById('refresh-all-icon');
+  const label = document.getElementById('refresh-all-label');
+  const btn   = document.getElementById('refresh-all-btn');
+  icon.style.display = 'inline-block';
+  icon.style.animation = 'spin 0.8s linear infinite';
+  label.textContent = 'Refreshing all sections…';
+  btn.style.opacity = '0.7';
+  btn.style.pointerEvents = 'none';
+
+  // Clear all caches
+  Object.keys(TOPICS).forEach(t => delete cache[t]);
+  saveCache();
+
+  // Fetch all topics in parallel
+  await Promise.all(Object.keys(TOPICS).map(t => fetchTopic(t)));
+
+  icon.style.animation = '';
+  icon.textContent = '✓';
+  label.textContent = 'All Sections Updated!';
+  btn.style.opacity = '';
+  btn.style.pointerEvents = '';
+  isFetching = false;
+
+  // Reset button text after 2s
+  setTimeout(() => {
+    icon.textContent = '↻';
+    label.textContent = 'Refresh All Sections';
+  }, 2000);
+
+  renderDateStrip();
 }
 
 function saveSettings() {
