@@ -184,12 +184,20 @@
     }
 
     .article-card {
-      background: var(--surface); border: 1px solid var(--border);
+      background: #ffffff; border: none;
       border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
-      cursor: pointer; transition: all 0.15s;
       text-decoration: none; display: block;
+      border-left: 4px solid transparent;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
     }
-    .article-card:active { opacity: 0.7; transform: scale(0.99); }
+    [data-topic="ai"]    .article-card { border-left-color: var(--ai); }
+    [data-topic="nba"]   .article-card { border-left-color: var(--nba); }
+    [data-topic="padel"] .article-card { border-left-color: var(--padel); }
+    [data-topic="shoes"] .article-card { border-left-color: var(--shoes); }
+    [data-topic="biz"]   .article-card { border-left-color: var(--biz); }
+    [data-topic="viral"] .article-card { border-left-color: var(--viral); }
+    [data-topic="dent"]  .article-card { border-left-color: var(--dent); }
+    [data-topic="arch"]  .article-card { border-left-color: var(--arch); }
 
     .article-source {
       font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
@@ -204,12 +212,42 @@
     [data-topic="dent"]  .article-source { color: var(--dent); }
     [data-topic="arch"]  .article-source { color: var(--arch); }
 
-    .article-title { font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--text); margin-bottom: 8px; }
-    .article-desc {
-      font-size: 13px; color: var(--text2); line-height: 1.65;
-      margin-bottom: 10px;
+    .article-title { font-size: 16px; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
+    [data-topic="ai"]    .article-title { color: var(--ai); }
+    [data-topic="nba"]   .article-title { color: var(--nba); }
+    [data-topic="padel"] .article-title { color: var(--padel); }
+    [data-topic="shoes"] .article-title { color: var(--shoes); }
+    [data-topic="biz"]   .article-title { color: var(--biz); }
+    [data-topic="viral"] .article-title { color: var(--viral); }
+    [data-topic="dent"]  .article-title { color: var(--dent); }
+    [data-topic="arch"]  .article-title { color: var(--arch); }
+
+    .article-meta { font-size: 11px; color: #888; }
+
+    .ai-toggle {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 10px; padding-top: 10px;
+      border-top: 1px solid #e5e7eb;
+      background: none; border-left: none; border-right: none; border-bottom: none;
+      width: 100%; text-align: left; cursor: pointer; padding-left: 0; padding-right: 0;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
     }
-    .article-meta { font-size: 11px; color: var(--text2); opacity: 0.6; }
+    [data-topic="ai"]    .ai-toggle { color: var(--ai); }
+    [data-topic="nba"]   .ai-toggle { color: var(--nba); }
+    [data-topic="padel"] .ai-toggle { color: var(--padel); }
+    [data-topic="shoes"] .ai-toggle { color: var(--shoes); }
+    [data-topic="biz"]   .ai-toggle { color: var(--biz); }
+    [data-topic="viral"] .ai-toggle { color: var(--viral); }
+    [data-topic="dent"]  .ai-toggle { color: var(--dent); }
+    [data-topic="arch"]  .ai-toggle { color: var(--arch); }
+    .ai-toggle-chevron { margin-left: auto; font-size: 14px; transition: transform 0.2s; }
+    .ai-toggle.open .ai-toggle-chevron { transform: rotate(180deg); }
+
+    .article-ai-wrap {
+      display: none; flex-direction: column; gap: 10px;
+      margin-top: 10px;
+    }
+    .article-ai-wrap.open { display: flex; }
 
     .brief-section { margin-bottom: 12px; }
     .brief-section:last-child { margin-bottom: 0; }
@@ -227,11 +265,11 @@
     .article-ai-label {
       display: block; font-size: 10px; font-weight: 700;
       letter-spacing: 0.7px; text-transform: uppercase;
-      color: var(--ai); opacity: 0.8; margin-bottom: 3px;
+      color: #555; margin-bottom: 3px;
     }
     .article-ai-text {
       font-size: 14px; line-height: 1.75;
-      color: rgba(240,240,248,0.9);
+      color: #222;
       margin: 0;
     }
     .article-ai-loading {
@@ -890,19 +928,34 @@ function renderArticles(topic, articles) {
     list.innerHTML = `<div class="empty"><div class="icon">📭</div><p>No articles found. Tap Check Now to retry.</p></div>`;
     return;
   }
-  list.innerHTML = articles.map(a => `
-    <a class="article-card" href="${a.link}" target="_blank" rel="noopener" data-topic="${topic}">
-      <div class="article-source">${a.source}</div>
-      <div class="article-title">${a.title}</div>
-      <div class="article-meta">${formatDate(a.date)}</div>
-      ${a.aiSummary ? `
-      <div class="article-ai-wrap">
-        ${a.aiSummary.split('|||').map((p, i) => {
-          const labels = ['📌 What happened','💡 Why it matters','🔎 Context','⏭️ What\'s next'];
-          return `<div class="article-ai-section"><span class="article-ai-label">${labels[i] || ''}</span><p class="article-ai-text">${p.trim()}</p></div>`;
-        }).join('')}
+  const uid = () => Math.random().toString(36).slice(2, 8);
+  list.innerHTML = articles.map(a => {
+    const id = uid();
+    const sections = a.aiSummary ? a.aiSummary.split('|||') : [];
+    const labels = ['📌 What happened','💡 Why it matters','🔎 Context','⏭️ What\'s next'];
+    return `
+    <div class="article-card" data-topic="${topic}">
+      <a href="${a.link}" target="_blank" rel="noopener" style="text-decoration:none">
+        <div class="article-source">${a.source}</div>
+        <div class="article-title">${a.title}</div>
+        <div class="article-meta">${formatDate(a.date)}</div>
+      </a>
+      ${sections.length ? `
+      <button class="ai-toggle" id="toggle-${id}" onclick="toggleSummary('${id}')">
+        ✦ AI Summary <span class="ai-toggle-chevron">▾</span>
+      </button>
+      <div class="article-ai-wrap" id="wrap-${id}">
+        ${sections.map((p, i) => `<div class="article-ai-section"><span class="article-ai-label">${labels[i] || ''}</span><p class="article-ai-text">${p.trim()}</p></div>`).join('')}
       </div>` : ''}
-    </a>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function toggleSummary(id) {
+  const wrap   = document.getElementById('wrap-' + id);
+  const toggle = document.getElementById('toggle-' + id);
+  const open   = wrap.classList.toggle('open');
+  toggle.classList.toggle('open', open);
 }
 
 function renderError() {
