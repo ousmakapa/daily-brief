@@ -211,16 +211,29 @@
     }
     .article-meta { font-size: 11px; color: var(--text2); opacity: 0.6; }
 
+    .brief-section { margin-bottom: 12px; }
+    .brief-section:last-child { margin-bottom: 0; }
+    .brief-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; opacity: 0.6; margin-bottom: 4px;
+    }
+
     .article-ai-wrap {
-      margin-top: 10px; padding-top: 10px;
+      margin-top: 12px; padding-top: 12px;
       border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .article-ai-section {}
+    .article-ai-label {
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.7px; text-transform: uppercase;
+      color: var(--ai); opacity: 0.8; margin-bottom: 3px;
     }
     .article-ai-text {
       font-size: 14px; line-height: 1.75;
       color: rgba(240,240,248,0.9);
-      margin-bottom: 8px;
+      margin: 0;
     }
-    .article-ai-text:last-child { margin-bottom: 0; }
     .article-ai-loading {
       font-size: 12px; color: var(--text2); opacity: 0.5;
       font-style: italic;
@@ -793,10 +806,21 @@ async function generateAIContent(topic, articles) {
             role: 'system',
             content: `You are a sharp senior news analyst. Return ONLY valid JSON with this exact shape:
 {
-  "brief": "A structured daily briefing with 3 parts separated by \\n\\n: (1) A bold opening sentence stating the single biggest story of the day. (2) 3-4 sentences covering what is happening across the other top stories, with context and connections between them. (3) A final sentence on what to watch next or why this moment matters.",
-  "articles": ["For each article write 4 sections separated by \\n\\n: Section 1 — WHAT HAPPENED: 2 sentences explaining exactly what occurred, who is involved, and the key facts. Section 2 — WHY IT MATTERS: 2 sentences on the significance, impact, or stakes — why should someone care. Section 3 — CONTEXT: 1-2 sentences of background that helps understand why this is happening now. Section 4 — WHAT'S NEXT: 1 sentence on what to expect or watch for going forward.", "same 4-section structure for article 2", ...]
+  "brief": {
+    "headline": "One sentence — the single most important story happening today in this topic.",
+    "overview": "3-4 sentences connecting the day's top stories — what is happening, who is involved, and why these stories matter together.",
+    "outlook": "1-2 sentences on what to watch next or why this moment is significant."
+  },
+  "articles": [
+    {
+      "what": "2 sentences: exactly what happened, who is involved, key facts and numbers.",
+      "why": "2 sentences: why this matters, what the impact or stakes are.",
+      "context": "1-2 sentences: background that explains why this is happening now.",
+      "next": "1 sentence: what to expect or watch for going forward."
+    }
+  ]
 }
-Rules: write like The Economist — precise, insightful, no fluff. Never repeat the headline word for word. Use specific names, numbers, and places. No bullet points, no markdown symbols, no section headers in the text — just plain flowing sentences separated by blank lines.`,
+Rules: write like The Economist — precise, insightful, specific. Never restate the headline. Use names, numbers, places. No bullet points, no markdown.`,
           },
           {
             role: 'user',
@@ -815,10 +839,12 @@ Rules: write like The Economist — precise, insightful, no fluff. Never repeat 
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return empty;
     const parsed = JSON.parse(match[0]);
-    return {
-      summary: parsed.brief || null,
-      articleSummaries: Array.isArray(parsed.articles) ? parsed.articles : [],
-    };
+    const b = parsed.brief;
+    const summary = b ? (typeof b === 'string' ? b : [b.headline, b.overview, b.outlook].filter(Boolean).join('|||')) : null;
+    const articleSummaries = Array.isArray(parsed.articles) ? parsed.articles.map(a =>
+      typeof a === 'string' ? a : [a.what, a.why, a.context, a.next].filter(Boolean).join('|||')
+    ) : [];
+    return { summary, articleSummaries };
   } catch (e) { console.error('generateAIContent exception', e); return empty; }
 }
 
@@ -847,9 +873,14 @@ function showSkeletons() {
 
 function renderSummary(topic, text) {
   const el = document.getElementById('summary-content');
-  el.innerHTML = text
-    ? text.split('\n\n').map(p => `<p class="summary-text" style="margin-bottom:10px">${p.trim()}</p>`).join('')
-    : `<p class="summary-text" style="opacity:0.45">${getApiKey() ? 'Could not generate summary.' : 'Add your OpenAI key in ⚙️ to get AI summaries.'}</p>`;
+  if (!text) { el.innerHTML = `<p class="summary-text" style="opacity:0.45">${getApiKey() ? 'Could not generate summary.' : 'Add your OpenAI key in ⚙️ to get AI summaries.'}</p>`; return; }
+  const parts = text.split('|||');
+  const labels = ['🔑 Top Story', '📰 Overview', '👀 What to Watch'];
+  el.innerHTML = parts.map((p, i) => `
+    <div class="brief-section">
+      <div class="brief-label">${labels[i] || ''}</div>
+      <p class="summary-text">${p.trim()}</p>
+    </div>`).join('');
 }
 
 function renderArticles(topic, articles) {
@@ -865,7 +896,10 @@ function renderArticles(topic, articles) {
       <div class="article-meta">${formatDate(a.date)}</div>
       ${a.aiSummary ? `
       <div class="article-ai-wrap">
-        ${a.aiSummary.split('\n\n').map(p => `<p class="article-ai-text">${p.trim()}</p>`).join('')}
+        ${a.aiSummary.split('|||').map((p, i) => {
+          const labels = ['📌 What happened','💡 Why it matters','🔎 Context','⏭️ What\'s next'];
+          return `<div class="article-ai-section"><span class="article-ai-label">${labels[i] || ''}</span><p class="article-ai-text">${p.trim()}</p></div>`;
+        }).join('')}
       </div>` : ''}
     </a>`).join('');
 }
