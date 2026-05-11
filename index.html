@@ -455,10 +455,13 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── API key (auto-loaded on first visit) ─────────────────────────────────────
+// ─── API key ──────────────────────────────────────────────────────────────────
 (function() {
-  if (!localStorage.getItem('openai_key')) {
+  const EMBEDDED_VER = '3';
+  if (!localStorage.getItem('openai_key_custom') || localStorage.getItem('openai_key_ver') !== EMBEDDED_VER) {
     localStorage.setItem('openai_key', atob('c2stcHJvai1tYW9vNHdxcnUtdUhOQmotYjd5UXEwbUhHWldvMFUxa19aS3BqUHFZaEk2U0VkT0ZabWU1SzFlZlR6dVI4QXhST1dZc3JiVUpQSlQzQmxia0ZKVE4xSTZIWmFwQlVFeXMtYVBPX1h4bnhxV1F0d0lzNWNwS0RkbkRNY2hlMTVRdENzdE1NR3Nsa1dfMW9ieFIydHFtc1BTS3p6MEE='));
+    localStorage.setItem('openai_key_ver', EMBEDDED_VER);
+    localStorage.removeItem('openai_key_custom');
   }
 })();
 
@@ -941,8 +944,8 @@ async function refreshAllSections() {
 function saveSettings() {
   const key = document.getElementById('api-key-input').value.trim();
   if (key && !key.startsWith('sk-')) { showToast('⚠️ Key should start with sk-'); return; }
-  if (key) localStorage.setItem('openai_key', key);
-  else localStorage.removeItem('openai_key');
+  if (key) { localStorage.setItem('openai_key', key); localStorage.setItem('openai_key_custom', '1'); }
+  else { localStorage.removeItem('openai_key'); localStorage.removeItem('openai_key_custom'); }
   document.getElementById('settings-overlay').classList.remove('open');
   delete cache[currentTopic];
   saveCache();
