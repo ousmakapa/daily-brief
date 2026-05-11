@@ -429,7 +429,7 @@
         <div class="how-icon">💾</div>
         <div class="how-text">
           <strong>Cache</strong>
-          <span>News is saved for 6 hours so the app opens instantly. Tap "Check Now" to force a fresh fetch at any time.</span>
+          <span>News is saved for 7 days so the app opens instantly. Tap "Check Now" to force a fresh fetch at any time.</span>
         </div>
       </div>
       <div class="how-row">
@@ -891,6 +891,20 @@ function closeOverlay(e, id) {
     document.getElementById(id).classList.remove('open');
 }
 
+async function fetchTopicSilently(topic) {
+  try {
+    let articles = await fetchNews(topic);
+    const { summary, articleSummaries } = await generateAIContent(topic, articles);
+    articles = articles.map((a, i) => ({ ...a, aiSummary: articleSummaries[i] || null }));
+    const ts = Date.now();
+    cache[topic] = { ts, articles, summary };
+    saveCache();
+    saveToArchive(topic, articles, summary);
+  } catch (err) {
+    console.error('silent fetch error for', topic, err);
+  }
+}
+
 async function refreshAllSections() {
   if (isFetching) return;
   isFetching = true;
@@ -903,26 +917,24 @@ async function refreshAllSections() {
   btn.style.opacity = '0.7';
   btn.style.pointerEvents = 'none';
 
-  // Clear all caches
   Object.keys(TOPICS).forEach(t => delete cache[t]);
   saveCache();
 
-  // Fetch all topics in parallel
-  await Promise.all(Object.keys(TOPICS).map(t => fetchTopic(t)));
+  try {
+    await Promise.all(Object.keys(TOPICS).map(t => fetchTopicSilently(t)));
+  } finally {
+    icon.style.animation = '';
+    icon.textContent = '✓';
+    label.textContent = 'All Sections Updated!';
+    btn.style.opacity = '';
+    btn.style.pointerEvents = '';
+    isFetching = false;
+    setTimeout(() => { icon.textContent = '↻'; label.textContent = 'Refresh All Sections'; }, 2000);
+  }
 
-  icon.style.animation = '';
-  icon.textContent = '✓';
-  label.textContent = 'All Sections Updated!';
-  btn.style.opacity = '';
-  btn.style.pointerEvents = '';
-  isFetching = false;
-
-  // Reset button text after 2s
-  setTimeout(() => {
-    icon.textContent = '↻';
-    label.textContent = 'Refresh All Sections';
-  }, 2000);
-
+  // Render only the currently visible tab from fresh cache
+  const fresh = cache[currentTopic];
+  if (fresh) renderAll(currentTopic, fresh.articles, fresh.summary, fresh.ts);
   renderDateStrip();
 }
 
