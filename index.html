@@ -212,19 +212,12 @@
     .article-meta { font-size: 11px; color: var(--text2); opacity: 0.6; }
 
     .article-ai-wrap {
-      margin-top: 12px; padding-top: 12px;
+      margin-top: 10px; padding-top: 10px;
       border-top: 1px solid var(--border);
     }
-    .article-ai-badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
-      text-transform: uppercase; padding: 3px 7px; border-radius: 5px;
-      background: rgba(124,92,252,0.15); color: var(--ai);
-      margin-bottom: 6px;
-    }
     .article-ai-text {
-      font-size: 13px; line-height: 1.65;
-      color: rgba(240,240,248,0.8);
+      font-size: 14px; line-height: 1.7;
+      color: rgba(240,240,248,0.85);
     }
     .article-ai-loading {
       font-size: 12px; color: var(--text2); opacity: 0.5;
@@ -796,12 +789,12 @@ async function generateAIContent(topic, articles) {
         messages: [
           {
             role: 'system',
-            content: `You are a news briefer. Return ONLY valid JSON with this exact shape:
+            content: `You are a sharp news analyst. Return ONLY valid JSON with this exact shape:
 {
-  "brief": "3-4 sentence overview of today's top stories",
-  "articles": ["2-sentence plain English summary for article 1", "...for article 2", ...]
+  "brief": "3-4 sentence overview that tells me what is happening today in this topic and why it matters",
+  "articles": ["2-3 sentence explanation for article 1 — what happened, why it matters, what it means going forward", "same for article 2", ...]
 }
-Rules: use clear simple English, explain what happened and why it matters, no bullet points, no markdown.`,
+Rules: write like you are explaining to a smart friend — be clear, direct, and insightful. Never just repeat the headline. Always explain the context and significance. No bullet points, no markdown.`,
           },
           {
             role: 'user',
@@ -867,11 +860,9 @@ function renderArticles(topic, articles) {
     <a class="article-card" href="${a.link}" target="_blank" rel="noopener" data-topic="${topic}">
       <div class="article-source">${a.source}</div>
       <div class="article-title">${a.title}</div>
-      ${a.description ? `<div class="article-desc">${a.description}</div>` : ''}
       <div class="article-meta">${formatDate(a.date)}</div>
       ${a.aiSummary ? `
       <div class="article-ai-wrap">
-        <div class="article-ai-badge">✦ AI Summary</div>
         <div class="article-ai-text">${a.aiSummary}</div>
       </div>` : ''}
     </a>`).join('');
