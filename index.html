@@ -24,6 +24,7 @@
       --biz: #3b82f6;
       --viral: #ec4899;
       --dent: #06b6d4;
+      --arch: #a78bfa;
       --radius: 16px;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -86,6 +87,7 @@
     .tab[data-topic="biz"].active    { background: var(--biz); }
     .tab[data-topic="viral"].active  { background: var(--viral); }
     .tab[data-topic="dent"].active   { background: var(--dent); }
+    .tab[data-topic="arch"].active   { background: var(--arch); color: #000; }
 
     /* ── Date strip ── */
     .date-strip {
@@ -117,6 +119,7 @@
     .summary-card[data-topic="biz"]   { background: linear-gradient(135deg,#0d2b5e,#0a0f1a); border:1px solid #3b82f644; }
     .summary-card[data-topic="viral"] { background: linear-gradient(135deg,#4a0a2e,#1a0a18); border:1px solid #ec489944; }
     .summary-card[data-topic="dent"]  { background: linear-gradient(135deg,#043a42,#0a1518); border:1px solid #06b6d444; }
+    .summary-card[data-topic="arch"]  { background: linear-gradient(135deg,#2e1f5e,#12101a); border:1px solid #a78bfa44; }
 
     .summary-label {
       font-size: 11px; font-weight: 700; letter-spacing: 1px;
@@ -129,6 +132,7 @@
     .summary-card[data-topic="biz"]   .summary-label { color: var(--biz); }
     .summary-card[data-topic="viral"] .summary-label { color: var(--viral); }
     .summary-card[data-topic="dent"]  .summary-label { color: var(--dent); }
+    .summary-card[data-topic="arch"]  .summary-label { color: var(--arch); }
 
     .summary-text { font-size: 15px; line-height: 1.65; color: rgba(255,255,255,0.9); }
 
@@ -161,6 +165,7 @@
     .check-now-btn[data-topic="biz"]   { background: var(--biz);   color: #fff; }
     .check-now-btn[data-topic="viral"] { background: var(--viral); color: #fff; }
     .check-now-btn[data-topic="dent"]  { background: var(--dent);  color: #000; }
+    .check-now-btn[data-topic="arch"]  { background: var(--arch);  color: #000; }
 
     .spin { display: inline-block; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -197,6 +202,7 @@
     [data-topic="biz"]   .article-source { color: var(--biz); }
     [data-topic="viral"] .article-source { color: var(--viral); }
     [data-topic="dent"]  .article-source { color: var(--dent); }
+    [data-topic="arch"]  .article-source { color: var(--arch); }
 
     .article-title { font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--text); margin-bottom: 8px; }
     .article-desc {
@@ -204,6 +210,26 @@
       margin-bottom: 10px;
     }
     .article-meta { font-size: 11px; color: var(--text2); opacity: 0.6; }
+
+    .article-ai-wrap {
+      margin-top: 12px; padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .article-ai-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; padding: 3px 7px; border-radius: 5px;
+      background: rgba(124,92,252,0.15); color: var(--ai);
+      margin-bottom: 6px;
+    }
+    .article-ai-text {
+      font-size: 13px; line-height: 1.65;
+      color: rgba(240,240,248,0.8);
+    }
+    .article-ai-loading {
+      font-size: 12px; color: var(--text2); opacity: 0.5;
+      font-style: italic;
+    }
 
     .card-skeleton {
       background: var(--surface); border: 1px solid var(--border);
@@ -313,6 +339,7 @@
   <button class="tab"        data-topic="biz"   onclick="switchTab('biz')">💼 Business</button>
   <button class="tab"        data-topic="viral" onclick="switchTab('viral')">🔥 Viral</button>
   <button class="tab"        data-topic="dent"  onclick="switchTab('dent')">🦷 Dentistry</button>
+  <button class="tab"        data-topic="arch"  onclick="switchTab('arch')">🏛️ Architecture</button>
 </div>
 
 <!-- Refresh All button -->
@@ -494,6 +521,14 @@ const TOPICS = {
     ],
     summaryPrompt: 'Summarize the top dentistry and oral health news today in 3-4 clear, easy-to-understand sentences. Cover new treatments, research, technology, or industry updates.',
   },
+  arch: {
+    label: 'Architecture', emoji: '🏛️',
+    feeds: [
+      'https://news.google.com/rss/search?q=architecture+building+design+urban&hl=en-US&gl=US&ceid=US:en',
+      'https://feeds.feedburner.com/dezeen',
+    ],
+    summaryPrompt: 'Summarize the top architecture and design news today in 3-4 engaging sentences. Cover notable buildings, urban projects, design trends, or awards.',
+  },
 };
 
 const PROXIES = [
@@ -655,7 +690,8 @@ function setCheckNowLoading(on) {
 async function fetchAndRender(topic) {
   try {
     const articles = await fetchNews(topic);
-    const summary  = await generateSummary(topic, articles);
+    const { summary, articleSummaries } = await generateAIContent(topic, articles);
+    articles = articles.map((a, i) => ({ ...a, aiSummary: articleSummaries[i] || null }));
     const ts = Date.now();
     cache[topic] = { ts, articles, summary };
     saveCache();
@@ -736,28 +772,52 @@ function formatTs(ts) {
   return `Updated ${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}`;
 }
 
-// ─── OpenAI Summary ───────────────────────────────────────────────────────────
+// ─── OpenAI: category brief + per-article summaries in one call ───────────────
 
-async function generateSummary(topic, articles) {
+async function generateAIContent(topic, articles) {
   const key = getApiKey();
-  if (!key || !articles.length) return null;
-  const headlines = articles.slice(0,6).map((a,i)=>`${i+1}. ${a.title}`).join('\n');
+  const empty = { summary: null, articleSummaries: [] };
+  if (!key || !articles.length) return empty;
+
+  const articleBlock = articles.slice(0, 10).map((a, i) =>
+    `[${i + 1}] "${a.title}"\n${a.description ? a.description.slice(0, 300) : 'No description'}`
+  ).join('\n\n');
+
   try {
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({
-        model: 'gpt-4o-mini', max_tokens: 200,
+        model: 'gpt-4o-mini',
+        max_tokens: 1200,
         messages: [
-          { role:'system', content:'You are a sharp, concise news briefer. Write in an engaging clear style. No bullet points.' },
-          { role:'user',   content:`${TOPICS[topic].summaryPrompt}\n\nHeadlines:\n${headlines}` },
+          {
+            role: 'system',
+            content: `You are a news briefer. Return ONLY valid JSON with this exact shape:
+{
+  "brief": "3-4 sentence overview of today's top stories",
+  "articles": ["2-sentence plain English summary for article 1", "...for article 2", ...]
+}
+Rules: use clear simple English, explain what happened and why it matters, no bullet points, no markdown.`,
+          },
+          {
+            role: 'user',
+            content: `Topic: ${TOPICS[topic].label}\nInstruction: ${TOPICS[topic].summaryPrompt}\n\nArticles:\n\n${articleBlock}`,
+          },
         ],
       }),
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) return empty;
     const data = await resp.json();
-    return data.choices[0].message.content.trim();
-  } catch { return null; }
+    const raw = data.choices[0].message.content.trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return empty;
+    const parsed = JSON.parse(match[0]);
+    return {
+      summary: parsed.brief || null,
+      articleSummaries: Array.isArray(parsed.articles) ? parsed.articles : [],
+    };
+  } catch { return empty; }
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
@@ -802,6 +862,11 @@ function renderArticles(topic, articles) {
       <div class="article-title">${a.title}</div>
       ${a.description ? `<div class="article-desc">${a.description}</div>` : ''}
       <div class="article-meta">${formatDate(a.date)}</div>
+      ${a.aiSummary ? `
+      <div class="article-ai-wrap">
+        <div class="article-ai-badge">✦ AI Summary</div>
+        <div class="article-ai-text">${a.aiSummary}</div>
+      </div>` : ''}
     </a>`).join('');
 }
 
