@@ -807,7 +807,11 @@ Rules: use clear simple English, explain what happened and why it matters, no bu
         ],
       }),
     });
-    if (!resp.ok) return empty;
+    if (!resp.ok) {
+      const errBody = await resp.json().catch(() => ({}));
+      console.error('OpenAI error', resp.status, JSON.stringify(errBody));
+      return { ...empty, summary: `API error ${resp.status}: ${errBody?.error?.message || 'unknown'}` };
+    }
     const data = await resp.json();
     const raw = data.choices[0].message.content.trim();
     const match = raw.match(/\{[\s\S]*\}/);
@@ -817,7 +821,7 @@ Rules: use clear simple English, explain what happened and why it matters, no bu
       summary: parsed.brief || null,
       articleSummaries: Array.isArray(parsed.articles) ? parsed.articles : [],
     };
-  } catch { return empty; }
+  } catch (e) { console.error('generateAIContent exception', e); return empty; }
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
