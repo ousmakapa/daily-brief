@@ -218,7 +218,9 @@
     .article-ai-text {
       font-size: 14px; line-height: 1.75;
       color: rgba(240,240,248,0.9);
+      margin-bottom: 8px;
     }
+    .article-ai-text:last-child { margin-bottom: 0; }
     .article-ai-loading {
       font-size: 12px; color: var(--text2); opacity: 0.5;
       font-style: italic;
@@ -785,16 +787,16 @@ async function generateAIContent(topic, articles) {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 2000,
+        max_tokens: 3000,
         messages: [
           {
             role: 'system',
             content: `You are a sharp senior news analyst. Return ONLY valid JSON with this exact shape:
 {
   "brief": "A structured daily briefing with 3 parts separated by \\n\\n: (1) A bold opening sentence stating the single biggest story of the day. (2) 3-4 sentences covering what is happening across the other top stories, with context and connections between them. (3) A final sentence on what to watch next or why this moment matters.",
-  "articles": ["For each article: 3-4 sentences. Sentence 1: what exactly happened. Sentence 2: the background/context that makes this significant. Sentence 3: what this means or what happens next. Be specific — names, numbers, places when available.", "same structure for article 2", ...]
+  "articles": ["For each article write 4 sections separated by \\n\\n: Section 1 — WHAT HAPPENED: 2 sentences explaining exactly what occurred, who is involved, and the key facts. Section 2 — WHY IT MATTERS: 2 sentences on the significance, impact, or stakes — why should someone care. Section 3 — CONTEXT: 1-2 sentences of background that helps understand why this is happening now. Section 4 — WHAT'S NEXT: 1 sentence on what to expect or watch for going forward.", "same 4-section structure for article 2", ...]
 }
-Rules: write like The Economist — precise, insightful, no fluff. Never repeat the headline word for word. Use specific details. Explain the 'so what'. Plain text only, no markdown symbols.`,
+Rules: write like The Economist — precise, insightful, no fluff. Never repeat the headline word for word. Use specific names, numbers, and places. No bullet points, no markdown symbols, no section headers in the text — just plain flowing sentences separated by blank lines.`,
           },
           {
             role: 'user',
@@ -863,7 +865,7 @@ function renderArticles(topic, articles) {
       <div class="article-meta">${formatDate(a.date)}</div>
       ${a.aiSummary ? `
       <div class="article-ai-wrap">
-        <div class="article-ai-text">${a.aiSummary}</div>
+        ${a.aiSummary.split('\n\n').map(p => `<p class="article-ai-text">${p.trim()}</p>`).join('')}
       </div>` : ''}
     </a>`).join('');
 }
