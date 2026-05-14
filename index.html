@@ -575,7 +575,9 @@ const TOPICS = {
       'https://blogs.nvidia.com/feed/',
       'https://news.google.com/rss/search?q=OpenAI+OR+Anthropic+OR+Gemini+OR+AI+model&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize the top AI and machine learning news from today. Focus on the most impactful developments.',
+    requireTerms: ['openai', 'anthropic', 'gemini', 'chatgpt', 'gpt', 'llm', 'deepmind', 'claude', 'mistral', 'sora', 'dall-e', 'stable diffusion', 'midjourney', 'ai model', 'artificial intelligence', 'machine learning', 'nvidia', 'hugging face'],
+    importanceCriteria: 'Score 80-100: new model launches, real capability announcements, product releases from major labs, major research breakthroughs, funding rounds above $100M, significant safety findings. Score 0-20: opinion on what AI might do someday, tutorials, listicles, generic "AI is changing X" takes, anything without a named product or concrete event.',
+    summaryPrompt: 'Summarize the top AI news today. Focus on the most concrete and impactful developments.',
   },
   nba: {
     label: 'NBA', emoji: '🏀',
@@ -586,7 +588,9 @@ const TOPICS = {
       'https://news.google.com/rss/search?q=NBA+trades+playoffs+injury+contract&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=NBA+news+ESPN+Yahoo+CBS+The+Athletic+playoffs&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize the top NBA news and highlights from today. Include key games, trades, or player news.',
+    requireTerms: ['nba', 'basketball'],
+    importanceCriteria: 'Score 80-100: confirmed trades, star player injuries or returns, playoff game results with key stats, major contract signings, coaching changes, breaking news from credible reporters. Score 0-20: fantasy basketball advice, generic power rankings, bench player minor news, recycled analysis, game previews without new information.',
+    summaryPrompt: 'Summarize the top NBA news today. Include key trades, injuries, or playoff results.',
   },
   padel: {
     label: 'Padel', emoji: '🎾',
@@ -597,7 +601,9 @@ const TOPICS = {
       'https://www.padeladdict.com/feed/',
       'https://news.google.com/rss/search?q=Premier+Padel+tournament+ranking+players&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize the top padel news from today. Include tournament results, player news, or industry updates.',
+    requireTerms: ['padel'],
+    importanceCriteria: 'Score 80-100: Premier Padel tournament draws and results, world ranking changes, top player news or transfers, rule changes, new equipment releases from major brands. Score 0-20: beginner technique tips, local club openings, generic padel lifestyle content, events not involving top-ranked players.',
+    summaryPrompt: 'Summarize the top padel news today. Include tournament results, player news, or ranking updates.',
   },
   shoes: {
     label: 'Sneakers', emoji: '👟',
@@ -609,7 +615,9 @@ const TOPICS = {
       'https://news.google.com/rss/search?q=Nike+Adidas+Jordan+New+Balance+sneaker+drop+collab&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=running+shoe+release+On+Asics+Hoka+sneaker&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize the top sneaker news today. Cover Nike, Adidas, Jordan, and other major drops or collabs.',
+    requireTerms: ['nike', 'adidas', 'jordan', 'sneaker', 'shoe', 'new balance', 'hoka', 'asics', 'yeezy', 'air max', 'dunk', 'collab', 'restock', 'drop', 'release'],
+    importanceCriteria: 'Score 80-100: confirmed release dates with prices, official collab announcements, limited drop details, restock alerts, new silhouette reveals from major brands. Score 0-20: "best sneakers for X" style guides, vague brand stories without a specific product, generic fashion roundups, old releases being re-covered.',
+    summaryPrompt: 'Summarize the top sneaker news today. Cover major drops, collabs, and releases.',
   },
   biz: {
     label: 'Business', emoji: '💼',
@@ -648,7 +656,8 @@ const TOPICS = {
       { url: 'https://www.influencermarketinghub.com/feed/', angle: 'Creator Economy' },
     ],
     excludeTerms: ['stock market', 'stocks', 'nasdaq', 's&p', 'dow jones', 'share price', 'trading day', 'wall street'],
-    summaryPrompt: 'Summarize practical business growth news for a business owner. Cover sales, ecommerce, branding, content marketing, AI tools, consumer trends, operations, and the creator economy. Avoid stock-market updates unless they directly affect business operations.',
+    importanceCriteria: 'Score 80-100: platform algorithm changes affecting reach or revenue, new tools with real performance data or case studies with numbers, major ecommerce policy changes, creator monetization updates, concrete consumer behavior shifts with data. Score 0-20: "10 tips for X" articles, motivational content, vague trend reports with no data, any advice that could have been written 2 years ago, stock market news.',
+    summaryPrompt: 'Summarize practical business growth news. Cover sales, ecommerce, branding, content marketing, AI tools, and the creator economy. Focus on what is new and actionable.',
   },
   viral: {
     label: 'Viral', emoji: '🔥',
@@ -662,7 +671,9 @@ const TOPICS = {
       'https://news.google.com/rss/search?q=viral+video+TikTok+Instagram+YouTube+brand+campaign&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=viral+marketing+idea+creator+trend+short+video&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize viral videos, viral ideas, creator trends, and standout marketing campaigns from today. Explain what made them spread and what a marketer or business owner can learn.',
+    requireTerms: ['viral', 'tiktok', 'instagram', 'youtube', 'creator', 'campaign', 'trend', 'views', 'reel', 'short'],
+    importanceCriteria: 'Score 80-100: specific campaigns with real view or engagement numbers, new platform features that change how content spreads, creator strategies proven to drive virality, brand campaigns that broke through with a measurable result. Score 0-20: generic "how to go viral" advice, opinion on what might trend, recycled trend reports, anything without a specific example or number.',
+    summaryPrompt: 'Summarize the most interesting viral moments, creator trends, and standout campaigns. Explain what made them spread and what someone can actually learn from it.',
   },
   dent: {
     label: 'Dentistry', emoji: '🦷',
@@ -675,7 +686,9 @@ const TOPICS = {
       'https://www.dentistrytoday.com/feed/',
       'https://www.dental-tribune.com/feed/',
     ],
-    summaryPrompt: 'Summarize the top dentistry and oral health news today. Cover new treatments, research, technology, or industry updates.',
+    requireTerms: ['dent', 'oral', 'tooth', 'teeth', 'gum', 'orthodon', 'implant', 'cavity', 'enamel', 'jaw', 'periodon'],
+    importanceCriteria: 'Score 80-100: published clinical studies with concrete findings, FDA or CE approved treatments or devices, breakthrough research, significant new technology entering the market. Score 0-20: generic brushing and flossing tips, practice management advice, hospital PR without clinical data, content a dentist already knows.',
+    summaryPrompt: 'Summarize the most important dentistry and oral health news today. Focus on research, new treatments, and technology.',
   },
   arch: {
     label: 'Architecture', emoji: '🏛️',
@@ -692,7 +705,9 @@ const TOPICS = {
       'https://www.archpaper.com/feed/',
       'https://www.architecturelab.net/feed/',
     ],
-    summaryPrompt: 'Summarize the top architecture and design news today. Cover notable buildings, urban projects, design trends, or awards.',
+    requireTerms: ['architect', 'building', 'design', 'urban', 'construct', 'facade', 'studio', 'tower', 'housing', 'pritzker', 'dezeen', 'archdaily'],
+    importanceCriteria: 'Score 80-100: iconic or landmark project completions or reveals, major awards, significant urban planning decisions, innovative construction methods or materials making news, work by globally recognized architects. Score 0-20: interior decoration tips, small residential renovations, generic "design trends" listicles, local projects with no broader significance.',
+    summaryPrompt: 'Summarize the top architecture and design news today. Focus on notable projects, awards, and ideas worth knowing.',
   },
   med: {
     label: 'Medicine', emoji: '⚕️',
@@ -706,7 +721,8 @@ const TOPICS = {
       'https://www.sciencedaily.com/rss/health_medicine.xml',
       'https://news.google.com/rss/search?q=medical+research+treatment+clinical+trial+healthcare&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize the top medicine and healthcare news today. Cover clinical research, treatments, public health, useful health guidance, and healthcare industry updates.',
+    importanceCriteria: 'Score 80-100: peer-reviewed study results with clear findings, FDA approvals of new drugs or devices, major clinical trial outcomes, public health developments that affect daily life, breakthroughs in treatment for common conditions. Score 0-20: "doctors say drink water" wellness fluff, hospital PR without data, unnamed expert opinion, generic health advice anyone already knows.',
+    summaryPrompt: 'Summarize the most important medicine and health news today. Focus on research findings, approvals, and developments that affect how people live or get treated.',
   },
   supp: {
     label: 'Supplements', emoji: '💪',
@@ -720,7 +736,9 @@ const TOPICS = {
       'https://news.google.com/rss/search?q=sports+nutrition+whey+protein+creatine+pre-workout+supplements&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=supplement+industry+vitamins+amino+acids+fitness+nutrition&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize useful supplement news and research today, especially protein, creatine, pre-workout, vitamins, sports nutrition, safety, product trends, and credible studies. Keep claims cautious and evidence-based.',
+    requireTerms: ['supplement', 'protein', 'creatine', 'vitamin', 'whey', 'pre-workout', 'preworkout', 'amino', 'collagen', 'omega', 'nutrition', 'nutraceutical', 'sports nutrition'],
+    importanceCriteria: 'Score 80-100: new RCT or meta-analysis results with named compounds and effect sizes, safety warnings or recalls, new formulations with clinical backing, regulatory updates affecting the supplement industry. Score 0-20: brand-sponsored content, vague health claims without studies, "best supplements for X" listicles, anything that reads like an ad.',
+    summaryPrompt: 'Summarize the most credible supplement and sports nutrition news today. Focus on actual research findings, safety, and new developments.',
   },
   perf: {
     label: 'Performance Marketing', emoji: '📈',
@@ -742,19 +760,21 @@ const TOPICS = {
       'https://news.google.com/rss/search?q=Google+Ads+Performance+Max+YouTube+ads+paid+search+updates&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=TikTok+ads+Shop+ads+paid+social+creative+testing&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize performance marketing news for operators. Focus on paid social, Google Ads, TikTok ads, creative testing, attribution, ROAS, CAC, ecommerce funnels, and platform changes.',
+    requireTerms: ['meta ads', 'google ads', 'tiktok ads', 'paid ads', 'paid social', 'performance marketing', 'roas', 'cac', 'cpm', 'ctr', 'advantage+', 'performance max', 'attribution', 'ad spend', 'campaign'],
+    importanceCriteria: 'Score 80-100: Meta, Google, or TikTok platform changes to ad delivery or targeting, new ad formats launched, algorithm changes affecting campaign performance, real ROAS or CPM benchmark data, attribution or tracking updates. Score 0-20: generic "how to run ads" guides, agency blog posts with no new data, opinion pieces, content that could have been written anytime in the last 3 years.',
+    summaryPrompt: 'Summarize the most important performance marketing news today. Focus on Meta Ads Manager, Google Ads, TikTok ads, platform changes, new formats, and real data that affects ad operators.',
   },
   higgs: {
     label: 'Higgsfield', emoji: '🎬',
     feeds: [
-      'https://news.google.com/rss/search?q=Higgsfield+AI+video&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=Higgsfield+Soul+Try+On+AI&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=Higgsfield+AI+camera+controls+video+creator&hl=en-US&gl=US&ceid=US:en',
-      'https://the-decoder.com/feed/',
-      'https://techcrunch.com/category/artificial-intelligence/feed/',
-      'https://blog.google/technology/ai/rss/',
+      'https://news.google.com/rss/search?q=Higgsfield+AI&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=Higgsfield+Soul+Try+On&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=Higgsfield+AI+video+camera&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=%22Higgsfield%22&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize news about Higgsfield and adjacent AI video tools. Focus on product launches, creator use cases, viral AI video ideas, model updates, and competitive moves.',
+    requireTerms: ['higgsfield'],
+    importanceCriteria: 'Score 80-100: confirmed Higgsfield product launches, feature updates, creator workflows, funding, partnerships, app availability, model updates, or official company announcements. Score 0: any AI video article that does not directly mention Higgsfield.',
+    summaryPrompt: 'Summarize only Higgsfield news. Focus on Higgsfield product launches, creator use cases, app updates, company announcements, and direct competitive moves where Higgsfield is named.',
   },
 };
 
@@ -917,6 +937,7 @@ function setCheckNowLoading(on) {
 async function fetchAndRender(topic) {
   try {
     let articles = await fetchNews(topic);
+    articles = await rankArticlesByImportance(topic, articles);
     // Batch AI calls: 6 articles per batch so every article gets a summary
     const BATCH = 6;
     let allSummaries = [];
@@ -962,6 +983,7 @@ async function fetchNews(topic) {
       if (!a.title) return false;
       const haystack = `${a.title} ${a.description}`.toLowerCase();
       if (config.excludeTerms?.some(term => haystack.includes(term.toLowerCase()))) return false;
+      if (config.requireTerms?.length && !config.requireTerms.some(term => haystack.includes(term.toLowerCase()))) return false;
       return true;
     });
   return chooseBestRelatedArticles(all.filter(a => isToday(a.date)));
@@ -1133,6 +1155,14 @@ function chooseBestRelatedArticles(articles) {
     .sort((a, b) => articleDateMs(b) - articleDateMs(a));
 }
 
+function sortArticlesByLocalImportance(articles) {
+  return [...articles].sort((a, b) => {
+    const scoreA = articleQualityScore(a) + (a.relatedCount || 1) * 35;
+    const scoreB = articleQualityScore(b) + (b.relatedCount || 1) * 35;
+    return scoreB - scoreA;
+  });
+}
+
 function formatDate(d) {
   if (!d) return '';
   try {
@@ -1188,6 +1218,7 @@ async function generateAIContent(topic, articles, includeBrief = false) {
     }
   ]
 }
+
 Rules: write like The Economist — precise, insightful, specific. Never restate the headline. Use names, numbers, places. No bullet points, no markdown.`,
           },
           {
@@ -1217,6 +1248,68 @@ Rules: write like The Economist — precise, insightful, specific. Never restate
 }
 
 // ─── Rendering ────────────────────────────────────────────────────────────────
+
+async function rankArticlesByImportance(topic, articles) {
+  const key = getApiKey();
+  if (!articles.length) return [];
+  if (!key) return sortArticlesByLocalImportance(articles).slice(0, 15);
+
+  const config = TOPICS[topic];
+  const CHUNK = 30;
+  const scored = [];
+  for (let offset = 0; offset < articles.length; offset += CHUNK) {
+    const batch = articles.slice(offset, offset + CHUNK);
+    const articleBlock = batch.map((a, i) =>
+      `[${i}] "${a.title}"\nSource: ${a.source || 'Unknown'}\n${a.description ? a.description.slice(0, 260) : 'No description'}`
+    ).join('\n\n');
+
+    try {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 1800,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a news curator scoring articles for a personal news app. Use one simple test: "Would I send this article to a friend who cares deeply about this section?" If yes and it tells them something genuinely new, specific, or useful, score high. If it is generic advice, recycled content, vague opinion, stock-market noise, or off-topic filler, score low. Score 0 for anything clearly off-topic. Return ONLY valid JSON: {"scores":[{"index":0,"score":0,"reason":"short"}]}. Do not add or remove articles.',
+            },
+            {
+              role: 'user',
+              content: `Topic: ${config.label}\nInstruction: ${config.summaryPrompt}\nImportance criteria: ${config.importanceCriteria || config.summaryPrompt}\n\nArticles:\n${articleBlock}`,
+            },
+          ],
+        }),
+      });
+      if (!resp.ok) throw new Error(`rank API ${resp.status}`);
+      const data = await resp.json();
+      const raw = data.choices?.[0]?.message?.content?.trim() || '';
+      const match = raw.match(/\{[\s\S]*\}/);
+      const parsed = match ? JSON.parse(match[0]) : null;
+      const scores = Array.isArray(parsed?.scores) ? parsed.scores : [];
+      const scoreMap = new Map(scores.map(item => [Number(item.index), Number(item.score)]));
+      batch.forEach((article, i) => {
+        const aiScore = scoreMap.has(i) ? scoreMap.get(i) : null;
+        scored.push({
+          ...article,
+          importanceScore: Number.isFinite(aiScore) ? Math.max(0, Math.min(100, aiScore)) : 50,
+        });
+      });
+    } catch (e) {
+      console.warn('AI ranking failed; using local ranking for batch', e.message);
+      scored.push(...sortArticlesByLocalImportance(batch).map((article, i) => ({
+        ...article,
+        importanceScore: Math.max(1, 70 - i),
+      })));
+    }
+  }
+
+  return scored.sort((a, b) =>
+    (b.importanceScore || 0) - (a.importanceScore || 0) ||
+    articleQualityScore(b) - articleQualityScore(a)
+  ).slice(0, 15);
+}
 
 function renderAll(topic, articles, summary, ts) {
   renderSummary(topic, summary);
@@ -1309,6 +1402,7 @@ function closeOverlay(e, id) {
 async function fetchTopicSilently(topic) {
   try {
     let articles = await fetchNews(topic);
+    articles = await rankArticlesByImportance(topic, articles);
     const BATCH = 6;
     let allSummaries = [];
     let overallSummary = null;
