@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+DailyBrief/node_modules/
+
+# Expo/build output
+.expo/
+DailyBrief/.expo/
+dist/
+web-build/
+DailyBrief/dist/
+DailyBrief/web-build/
+
+# Native/generated build folders
+android/
+ios/
+DailyBrief/android/
+DailyBrief/ios/
+
+# Local/env/debug files
+.env
+.env.*
+!.env.example
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Icon</title></head>
+<body>
+<canvas id="c" width="512" height="512"></canvas>
+<a id="dl" download="icon.png">Download icon.png</a>
+<script>
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+
+  // Background gradient
+  const g = ctx.createLinearGradient(0, 0, 512, 512);
+  g.addColorStop(0, '#2d1f6e');
+  g.addColorStop(1, '#0a0a0f');
+  ctx.fillStyle = g;
+  ctx.roundRect(0, 0, 512, 512, 100);
+  ctx.fill();
+
+  // Emoji
+  ctx.font = '260px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('📰', 256, 256);
+
+  document.getElementById('dl').href = c.toDataURL('image/png');
+  document.getElementById('dl').click();
+</script>
+</body>
+</html>
