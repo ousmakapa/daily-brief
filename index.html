@@ -25,6 +25,10 @@
       --viral: #ec4899;
       --dent: #06b6d4;
       --arch: #a78bfa;
+      --med: #14b8a6;
+      --supp: #84cc16;
+      --perf: #f97316;
+      --higgs: #38bdf8;
       --radius: 16px;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -88,6 +92,10 @@
     .tab[data-topic="viral"].active  { background: var(--viral); }
     .tab[data-topic="dent"].active   { background: var(--dent); }
     .tab[data-topic="arch"].active   { background: var(--arch); color: #000; }
+    .tab[data-topic="med"].active    { background: var(--med); color: #000; }
+    .tab[data-topic="supp"].active   { background: var(--supp); color: #000; }
+    .tab[data-topic="perf"].active   { background: var(--perf); color: #000; }
+    .tab[data-topic="higgs"].active  { background: var(--higgs); color: #000; }
 
     /* ── Date strip ── */
     .date-strip {
@@ -120,6 +128,10 @@
     .summary-card[data-topic="viral"] { background: linear-gradient(135deg,#4a0a2e,#1a0a18); border:1px solid #ec489944; }
     .summary-card[data-topic="dent"]  { background: linear-gradient(135deg,#043a42,#0a1518); border:1px solid #06b6d444; }
     .summary-card[data-topic="arch"]  { background: linear-gradient(135deg,#2e1f5e,#12101a); border:1px solid #a78bfa44; }
+    .summary-card[data-topic="med"]   { background: linear-gradient(135deg,#063b36,#071817); border:1px solid #14b8a644; }
+    .summary-card[data-topic="supp"]  { background: linear-gradient(135deg,#2f3f05,#101606); border:1px solid #84cc1644; }
+    .summary-card[data-topic="perf"]  { background: linear-gradient(135deg,#4b2207,#1a1008); border:1px solid #f9731644; }
+    .summary-card[data-topic="higgs"] { background: linear-gradient(135deg,#08364d,#07131b); border:1px solid #38bdf844; }
 
     .summary-label {
       font-size: 11px; font-weight: 700; letter-spacing: 1px;
@@ -133,6 +145,10 @@
     .summary-card[data-topic="viral"] .summary-label { color: var(--viral); }
     .summary-card[data-topic="dent"]  .summary-label { color: var(--dent); }
     .summary-card[data-topic="arch"]  .summary-label { color: var(--arch); }
+    .summary-card[data-topic="med"]   .summary-label { color: var(--med); }
+    .summary-card[data-topic="supp"]  .summary-label { color: var(--supp); }
+    .summary-card[data-topic="perf"]  .summary-label { color: var(--perf); }
+    .summary-card[data-topic="higgs"] .summary-label { color: var(--higgs); }
 
     .summary-text { font-size: 15px; line-height: 1.65; color: rgba(255,255,255,0.9); }
 
@@ -166,6 +182,10 @@
     .check-now-btn[data-topic="viral"] { background: var(--viral); color: #fff; }
     .check-now-btn[data-topic="dent"]  { background: var(--dent);  color: #000; }
     .check-now-btn[data-topic="arch"]  { background: var(--arch);  color: #000; }
+    .check-now-btn[data-topic="med"]   { background: var(--med);   color: #000; }
+    .check-now-btn[data-topic="supp"]  { background: var(--supp);  color: #000; }
+    .check-now-btn[data-topic="perf"]  { background: var(--perf);  color: #000; }
+    .check-now-btn[data-topic="higgs"] { background: var(--higgs); color: #000; }
 
     .spin { display: inline-block; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -198,6 +218,10 @@
     [data-topic="viral"] .article-card { border-left-color: var(--viral); }
     [data-topic="dent"]  .article-card { border-left-color: var(--dent); }
     [data-topic="arch"]  .article-card { border-left-color: var(--arch); }
+    [data-topic="med"]   .article-card { border-left-color: var(--med); }
+    [data-topic="supp"]  .article-card { border-left-color: var(--supp); }
+    [data-topic="perf"]  .article-card { border-left-color: var(--perf); }
+    [data-topic="higgs"] .article-card { border-left-color: var(--higgs); }
 
     .article-source {
       font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
@@ -211,6 +235,10 @@
     [data-topic="viral"] .article-source { color: var(--viral); }
     [data-topic="dent"]  .article-source { color: var(--dent); }
     [data-topic="arch"]  .article-source { color: var(--arch); }
+    [data-topic="med"]   .article-source { color: var(--med); }
+    [data-topic="supp"]  .article-source { color: var(--supp); }
+    [data-topic="perf"]  .article-source { color: var(--perf); }
+    [data-topic="higgs"] .article-source { color: var(--higgs); }
 
     .article-title { font-size: 16px; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
     [data-topic="ai"]    .article-title { color: var(--ai); }
@@ -221,8 +249,22 @@
     [data-topic="viral"] .article-title { color: var(--viral); }
     [data-topic="dent"]  .article-title { color: var(--dent); }
     [data-topic="arch"]  .article-title { color: var(--arch); }
+    [data-topic="med"]   .article-title { color: var(--med); }
+    [data-topic="supp"]  .article-title { color: var(--supp); }
+    [data-topic="perf"]  .article-title { color: var(--perf); }
+    [data-topic="higgs"] .article-title { color: var(--higgs); }
 
     .article-meta { font-size: 11px; color: #888; }
+    .article-angle {
+      display: inline-flex; margin-top: 8px; padding: 4px 9px;
+      border-radius: 999px; background: #eff6ff; color: #1d4ed8;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .article-related {
+      margin-top: 7px; font-size: 11px; color: #666;
+      font-weight: 600;
+    }
 
     .ai-toggle {
       display: flex; align-items: center; gap: 6px;
@@ -240,6 +282,10 @@
     [data-topic="viral"] .ai-toggle { color: var(--viral); }
     [data-topic="dent"]  .ai-toggle { color: var(--dent); }
     [data-topic="arch"]  .ai-toggle { color: var(--arch); }
+    [data-topic="med"]   .ai-toggle { color: var(--med); }
+    [data-topic="supp"]  .ai-toggle { color: var(--supp); }
+    [data-topic="perf"]  .ai-toggle { color: var(--perf); }
+    [data-topic="higgs"] .ai-toggle { color: var(--higgs); }
     .ai-toggle-chevron { margin-left: auto; font-size: 14px; transition: transform 0.2s; }
     .ai-toggle.open .ai-toggle-chevron { transform: rotate(180deg); }
 
@@ -384,6 +430,10 @@
   <button class="tab"        data-topic="viral" onclick="switchTab('viral')">🔥 Viral</button>
   <button class="tab"        data-topic="dent"  onclick="switchTab('dent')">🦷 Dentistry</button>
   <button class="tab"        data-topic="arch"  onclick="switchTab('arch')">🏛️ Architecture</button>
+  <button class="tab"        data-topic="med"   onclick="switchTab('med')">⚕️ Medicine</button>
+  <button class="tab"        data-topic="supp"  onclick="switchTab('supp')">💪 Supplements</button>
+  <button class="tab"        data-topic="perf"  onclick="switchTab('perf')">📈 Performance Marketing</button>
+  <button class="tab"        data-topic="higgs" onclick="switchTab('higgs')">🎬 Higgsfield</button>
 </div>
 
 <!-- Refresh All button -->
@@ -452,7 +502,7 @@
         <div class="how-icon">📡</div>
         <div class="how-text">
           <strong>News fetching</strong>
-          <span>Every time you open the app or tap "Check Now", it pulls the latest articles from trusted RSS feeds (TechCrunch, ESPN, World Padel Tour, Sneaker News…).</span>
+          <span>Every time you open the app or tap "Check Now", it pulls the latest articles from a broad set of publisher RSS feeds, with targeted news-search feeds only used as backup for niche topics.</span>
         </div>
       </div>
       <div class="how-row">
@@ -515,68 +565,104 @@ const TOPICS = {
   ai: {
     label: 'AI', emoji: '🤖',
     feeds: [
-      'https://news.google.com/rss/search?q=artificial+intelligence+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=OpenAI+ChatGPT+GPT&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=Google+Gemini+AI+DeepMind&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=Anthropic+Claude+AI+model&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=machine+learning+AI+research+2025&hl=en-US&gl=US&ceid=US:en',
+      'https://techcrunch.com/category/artificial-intelligence/feed/',
+      'https://www.artificialintelligence-news.com/feed/',
+      'https://the-decoder.com/feed/',
+      'https://openai.com/news/rss.xml',
+      'https://blog.google/technology/ai/rss/',
+      'https://www.microsoft.com/en-us/ai/blog/feed/',
+      'https://aws.amazon.com/blogs/machine-learning/feed/',
+      'https://blogs.nvidia.com/feed/',
+      'https://news.google.com/rss/search?q=OpenAI+OR+Anthropic+OR+Gemini+OR+AI+model&hl=en-US&gl=US&ceid=US:en',
     ],
     summaryPrompt: 'Summarize the top AI and machine learning news from today. Focus on the most impactful developments.',
   },
   nba: {
     label: 'NBA', emoji: '🏀',
     feeds: [
-      'https://news.google.com/rss/search?q=NBA+game+result+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=NBA+trade+draft+playoffs&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=NBA+player+injury+contract&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=LeBron+Curry+Durant+Giannis+NBA&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=NBA+standings+playoffs+2025&hl=en-US&gl=US&ceid=US:en',
+      'https://www.espn.com/espn/rss/nba/news',
+      'https://sports.yahoo.com/nba/rss.xml',
+      'https://www.cbssports.com/rss/headlines/nba/',
+      'https://news.google.com/rss/search?q=NBA+trades+playoffs+injury+contract&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=NBA+news+ESPN+Yahoo+CBS+The+Athletic+playoffs&hl=en-US&gl=US&ceid=US:en',
     ],
     summaryPrompt: 'Summarize the top NBA news and highlights from today. Include key games, trades, or player news.',
   },
   padel: {
     label: 'Padel', emoji: '🎾',
     feeds: [
-      'https://news.google.com/rss/search?q=padel+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=Premier+Padel+tournament&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=padel+player+ranking+world&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=padel+Lebron+Coello+Di+Nenno&hl=en-US&gl=US&ceid=US:en',
-      'https://www.padelmagazine.fr/feed/',
+      'https://padelmagazine.fr/feed/',
+      'https://www.padelalto.com/feed/',
+      'https://thepadelpaper.com/feed/',
+      'https://www.padeladdict.com/feed/',
+      'https://news.google.com/rss/search?q=Premier+Padel+tournament+ranking+players&hl=en-US&gl=US&ceid=US:en',
     ],
     summaryPrompt: 'Summarize the top padel news from today. Include tournament results, player news, or industry updates.',
   },
   shoes: {
     label: 'Sneakers', emoji: '👟',
     feeds: [
-      'https://news.google.com/rss/search?q=Nike+sneaker+release+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=Adidas+Jordan+sneaker+drop+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=sneaker+collab+limited+edition&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=New+Balance+Asics+On+Running+shoe&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=sneaker+resell+StockX+SNKRS&hl=en-US&gl=US&ceid=US:en',
+      'https://sneakernews.com/feed/',
+      'https://www.nicekicks.com/feed/',
+      'https://www.kicksonfire.com/feed/',
+      'https://www.runnersworld.com/rss/all.xml/',
+      'https://news.google.com/rss/search?q=Nike+Adidas+Jordan+New+Balance+sneaker+drop+collab&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=running+shoe+release+On+Asics+Hoka+sneaker&hl=en-US&gl=US&ceid=US:en',
     ],
     summaryPrompt: 'Summarize the top sneaker news today. Cover Nike, Adidas, Jordan, and other major drops or collabs.',
   },
   biz: {
     label: 'Business', emoji: '💼',
     feeds: [
-      'https://news.google.com/rss/search?q=business+economy+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=stock+market+S%26P+Nasdaq+today&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=startup+funding+venture+capital+IPO&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=Apple+Google+Microsoft+Amazon+earnings&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=economy+inflation+Fed+interest+rate&hl=en-US&gl=US&ceid=US:en',
+      { url: 'https://news.google.com/rss/search?q=sales+strategy+lead+generation+closing+customer+retention+-stock+-stocks&hl=en-US&gl=US&ceid=US:en', angle: 'Sales' },
+      { url: 'https://blog.hubspot.com/sales/rss.xml', angle: 'Sales' },
+      { url: 'https://www.salesforce.com/blog/category/sales/feed/', angle: 'Sales' },
+      { url: 'https://news.google.com/rss/search?q=ecommerce+Shopify+DTC+marketplaces+conversion+checkout+-stock+-stocks&hl=en-US&gl=US&ceid=US:en', angle: 'Ecommerce' },
+      { url: 'https://www.retaildive.com/feeds/news/', angle: 'Ecommerce' },
+      { url: 'https://www.modernretail.co/feed/', angle: 'Ecommerce' },
+      { url: 'https://www.practicalecommerce.com/feed', angle: 'Ecommerce' },
+      { url: 'https://www.ecommercebytes.com/feed', angle: 'Ecommerce' },
+      { url: 'https://news.google.com/rss/search?q=branding+brand+strategy+positioning+customer+trust+business+-stock+-stocks&hl=en-US&gl=US&ceid=US:en', angle: 'Branding' },
+      { url: 'https://www.brandingmag.com/feed/', angle: 'Branding' },
+      { url: 'https://www.fastcompany.com/latest/rss', angle: 'Branding' },
+      { url: 'https://www.socialmediatoday.com/feeds/news/', angle: 'Content Marketing' },
+      { url: 'https://buffer.com/resources/rss/', angle: 'Content Marketing' },
+      { url: 'https://www.socialmediaexaminer.com/feed/', angle: 'Content Marketing' },
+      { url: 'https://blog.hubspot.com/marketing/rss.xml', angle: 'Content Marketing' },
+      { url: 'https://copyblogger.com/feed/', angle: 'Content Marketing' },
+      { url: 'https://news.google.com/rss/search?q=content+marketing+short+form+video+UGC+creator+strategy+business&hl=en-US&gl=US&ceid=US:en', angle: 'Content Marketing' },
+      { url: 'https://the-decoder.com/feed/', angle: 'AI Tools' },
+      { url: 'https://techcrunch.com/category/artificial-intelligence/feed/', angle: 'AI Tools' },
+      { url: 'https://blog.google/technology/ai/rss/', angle: 'AI Tools' },
+      { url: 'https://news.google.com/rss/search?q=AI+tools+automation+small+business+marketing+sales+operations&hl=en-US&gl=US&ceid=US:en', angle: 'AI Tools' },
+      { url: 'https://news.google.com/rss/search?q=consumer+trends+shopping+behavior+wellness+fitness+retail+Gen+Z&hl=en-US&gl=US&ceid=US:en', angle: 'Consumer Trends' },
+      { url: 'https://www.glossy.co/feed/', angle: 'Consumer Trends' },
+      { url: 'https://www.retaildive.com/feeds/news/', angle: 'Consumer Trends' },
+      { url: 'https://smallbiztrends.com/feed/', angle: 'Operations' },
+      { url: 'https://www.entrepreneur.com/latest.rss', angle: 'Operations' },
+      { url: 'https://feeds.feedburner.com/entrepreneur/latest', angle: 'Operations' },
+      { url: 'https://news.google.com/rss/search?q=business+operations+hiring+SOP+customer+support+inventory+cash+flow+-stock+-stocks&hl=en-US&gl=US&ceid=US:en', angle: 'Operations' },
+      { url: 'https://news.google.com/rss/search?q=creator+economy+influencer+marketing+affiliate+UGC+social+commerce&hl=en-US&gl=US&ceid=US:en', angle: 'Creator Economy' },
+      { url: 'https://www.creatoriq.com/blog/rss.xml', angle: 'Creator Economy' },
+      { url: 'https://www.socialmediaexaminer.com/feed/', angle: 'Creator Economy' },
+      { url: 'https://www.influencermarketinghub.com/feed/', angle: 'Creator Economy' },
     ],
-    summaryPrompt: 'Summarize the top business and finance news today. Focus on markets, startups, and major corporate news.',
+    excludeTerms: ['stock market', 'stocks', 'nasdaq', 's&p', 'dow jones', 'share price', 'trading day', 'wall street'],
+    summaryPrompt: 'Summarize practical business growth news for a business owner. Cover sales, ecommerce, branding, content marketing, AI tools, consumer trends, operations, and the creator economy. Avoid stock-market updates unless they directly affect business operations.',
   },
   viral: {
     label: 'Viral', emoji: '🔥',
     feeds: [
-      'https://news.google.com/rss/search?q=viral+trend+social+media+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=TikTok+Instagram+YouTube+trending&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=marketing+campaign+viral+brand&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=influencer+content+creator+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=digital+marketing+trend+2025&hl=en-US&gl=US&ceid=US:en',
+      'https://www.socialmediatoday.com/feeds/news/',
+      'https://www.adweek.com/feed/',
+      'https://www.marketingdive.com/feeds/news/',
+      'https://www.socialmediaexaminer.com/feed/',
+      'https://www.creatoriq.com/blog/rss.xml',
+      'https://www.influencermarketinghub.com/feed/',
+      'https://news.google.com/rss/search?q=viral+video+TikTok+Instagram+YouTube+brand+campaign&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=viral+marketing+idea+creator+trend+short+video&hl=en-US&gl=US&ceid=US:en',
     ],
-    summaryPrompt: 'Summarize the top viral trends, marketing campaigns, and social media news today.',
+    summaryPrompt: 'Summarize viral videos, viral ideas, creator trends, and standout marketing campaigns from today. Explain what made them spread and what a marketer or business owner can learn.',
   },
   dent: {
     label: 'Dentistry', emoji: '🦷',
@@ -586,6 +672,8 @@ const TOPICS = {
       'https://news.google.com/rss/search?q=dental+implant+orthodontics+braces&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=dental+technology+AI+dentistry&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=dental+research+treatment+study&hl=en-US&gl=US&ceid=US:en',
+      'https://www.dentistrytoday.com/feed/',
+      'https://www.dental-tribune.com/feed/',
     ],
     summaryPrompt: 'Summarize the top dentistry and oral health news today. Cover new treatments, research, technology, or industry updates.',
   },
@@ -597,8 +685,76 @@ const TOPICS = {
       'https://news.google.com/rss/search?q=urban+planning+city+design+sustainable&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=architecture+award+prize+Pritzker&hl=en-US&gl=US&ceid=US:en',
       'https://feeds.feedburner.com/dezeen',
+      'https://www.archdaily.com/search/projects/rss',
+      'https://www.archdaily.com/search/news/rss',
+      'https://www.designboom.com/architecture/feed/',
+      'https://www.architecturaldigest.com/feed/rss',
+      'https://www.archpaper.com/feed/',
+      'https://www.architecturelab.net/feed/',
     ],
     summaryPrompt: 'Summarize the top architecture and design news today. Cover notable buildings, urban projects, design trends, or awards.',
+  },
+  med: {
+    label: 'Medicine', emoji: '⚕️',
+    feeds: [
+      'https://www.healthline.com/rss/health-news',
+      'https://www.news-medical.net/syndication.axd?format=rss',
+      'https://www.medpagetoday.com/rss/headlines.xml',
+      'https://www.fiercehealthcare.com/rss/xml',
+      'https://www.healthcareitnews.com/feed',
+      'https://www.medicaldesignandoutsourcing.com/feed/',
+      'https://www.sciencedaily.com/rss/health_medicine.xml',
+      'https://news.google.com/rss/search?q=medical+research+treatment+clinical+trial+healthcare&hl=en-US&gl=US&ceid=US:en',
+    ],
+    summaryPrompt: 'Summarize the top medicine and healthcare news today. Cover clinical research, treatments, public health, useful health guidance, and healthcare industry updates.',
+  },
+  supp: {
+    label: 'Supplements', emoji: '💪',
+    feeds: [
+      'https://www.news-medical.net/syndication.axd?format=rss',
+      'https://www.healthline.com/rss/health-news',
+      'https://www.naturalproductsinsider.com/rss.xml',
+      'https://www.nutraceuticalbusinessreview.com/rss',
+      'https://www.supplysidesj.com/rss.xml',
+      'https://news.google.com/rss/search?q=protein+powder+creatine+supplements+nutrition+study&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=sports+nutrition+whey+protein+creatine+pre-workout+supplements&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=supplement+industry+vitamins+amino+acids+fitness+nutrition&hl=en-US&gl=US&ceid=US:en',
+    ],
+    summaryPrompt: 'Summarize useful supplement news and research today, especially protein, creatine, pre-workout, vitamins, sports nutrition, safety, product trends, and credible studies. Keep claims cautious and evidence-based.',
+  },
+  perf: {
+    label: 'Performance Marketing', emoji: '📈',
+    feeds: [
+      'https://www.searchenginejournal.com/category/paid-media/feed/',
+      'https://www.ppchero.com/feed/',
+      'https://www.searchenginejournal.com/feed/',
+      'https://www.marketingdive.com/feeds/news/',
+      'https://www.adexchanger.com/feed/',
+      'https://martech.org/feed/',
+      'https://neilpatel.com/feed/',
+      'https://www.seroundtable.com/index.rdf',
+      'https://searchengineland.com/feed',
+      'https://ads-developers.googleblog.com/feeds/posts/default?alt=rss',
+      'https://developers.facebook.com/blog/feed/',
+      'https://www.thinkwithgoogle.com/rss.xml',
+      'https://news.google.com/rss/search?q=performance+marketing+paid+ads+Meta+Google+TikTok+ROAS+CAC&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=Meta+Ads+Manager+Facebook+Instagram+ads+Advantage%2B+campaigns&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=Google+Ads+Performance+Max+YouTube+ads+paid+search+updates&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=TikTok+ads+Shop+ads+paid+social+creative+testing&hl=en-US&gl=US&ceid=US:en',
+    ],
+    summaryPrompt: 'Summarize performance marketing news for operators. Focus on paid social, Google Ads, TikTok ads, creative testing, attribution, ROAS, CAC, ecommerce funnels, and platform changes.',
+  },
+  higgs: {
+    label: 'Higgsfield', emoji: '🎬',
+    feeds: [
+      'https://news.google.com/rss/search?q=Higgsfield+AI+video&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=Higgsfield+Soul+Try+On+AI&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=Higgsfield+AI+camera+controls+video+creator&hl=en-US&gl=US&ceid=US:en',
+      'https://the-decoder.com/feed/',
+      'https://techcrunch.com/category/artificial-intelligence/feed/',
+      'https://blog.google/technology/ai/rss/',
+    ],
+    summaryPrompt: 'Summarize news about Higgsfield and adjacent AI video tools. Focus on product launches, creator use cases, viral AI video ideas, model updates, and competitive moves.',
   },
 };
 
@@ -797,42 +953,54 @@ function isToday(dateStr) {
 }
 
 async function fetchNews(topic) {
+  const config = TOPICS[topic];
   const results = await Promise.allSettled(TOPICS[topic].feeds.map(fetchFeed));
-  const seen = new Set();
   const all = results
     .filter(r => r.status === 'fulfilled')
     .flatMap(r => r.value)
-    .filter(a => { if (seen.has(a.title)) return false; seen.add(a.title); return true; });
-  return all.filter(a => isToday(a.date)).slice(0, 20);
+    .filter(a => {
+      if (!a.title) return false;
+      const haystack = `${a.title} ${a.description}`.toLowerCase();
+      if (config.excludeTerms?.some(term => haystack.includes(term.toLowerCase()))) return false;
+      return true;
+    });
+  return chooseBestRelatedArticles(all.filter(a => isToday(a.date)));
 }
 
 async function fetchFeed(url) {
+  const feed = typeof url === 'string' ? { url } : url;
   for (const proxyFn of PROXIES) {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 9000);
-      const resp = await fetch(proxyFn(url), { signal: controller.signal });
+      const resp = await fetch(proxyFn(feed.url), { signal: controller.signal });
       clearTimeout(timer);
       if (!resp.ok) continue;
       const text = await resp.text();
-      if (!text.includes('<item')) continue;
+      if (!/<item|<entry/i.test(text)) continue;
       const xml = new DOMParser().parseFromString(text, 'text/xml');
       const channelTitle = xml.querySelector('channel > title')?.textContent
-        || new URL(url).hostname.replace('www.', '');
-      const items = Array.from(xml.querySelectorAll('item')).slice(0, 15);
+        || xml.querySelector('feed > title')?.textContent
+        || new URL(feed.url).hostname.replace('www.', '');
+      const items = Array.from(xml.querySelectorAll('item, entry'));
       const results = items.map(item => {
+        const isAtom = item.tagName.toLowerCase().endsWith('entry');
+        const getText = (selectors) => selectors
+          .map(sel => item.querySelector(sel)?.textContent?.trim())
+          .find(Boolean) || '';
+        const atomLink = item.querySelector('link[rel="alternate"]')?.getAttribute('href')
+          || item.querySelector('link')?.getAttribute('href');
         // Prefer full content over short description
-        const fullContent = item.querySelector('encoded')?.textContent
-          || item.querySelector('content')?.textContent
-          || item.querySelector('description')?.textContent || '';
+        const fullContent = getText(['content\\:encoded', 'encoded', 'content', 'summary', 'description']);
         const desc = stripHtml(fullContent).replace(/\s+/g,' ').trim().slice(0, 600);
+        const parsed = parseArticleTitleAndSource(stripHtml(getText(['title'])), channelTitle);
         return {
-          title:       stripHtml(item.querySelector('title')?.textContent || ''),
+          title:       parsed.title,
           description: desc,
-          link:        item.querySelector('link')?.textContent?.trim()
-                       || item.querySelector('guid')?.textContent?.trim() || '#',
-          source:      channelTitle,
-          date:        item.querySelector('pubDate')?.textContent || '',
+          link:        isAtom ? (atomLink || '#') : (getText(['link', 'guid']) || '#'),
+          source:      parsed.source,
+          date:        getText(['pubDate', 'published', 'updated', 'dc\\:date']),
+          angle:       feed.angle || '',
         };
       }).filter(a => a.title);
       if (results.length) return results;
@@ -843,6 +1011,126 @@ async function fetchFeed(url) {
 
 function stripHtml(h) {
   return h.replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#039;/g,"'").replace(/\s+/g,' ').trim();
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/`/g, '&#096;');
+}
+
+function parseArticleTitleAndSource(title, fallbackSource) {
+  if (/google news/i.test(fallbackSource || '') && title.includes(' - ')) {
+    const parts = title.split(' - ');
+    const source = parts.pop().trim();
+    return { title: parts.join(' - ').trim() || title, source: source || fallbackSource };
+  }
+  return { title, source: fallbackSource };
+}
+
+const STOP_WORDS = new Set([
+  'about','after','again','against','also','amid','and','are','as','at','be','because','been','being','but','by',
+  'can','could','day','days','for','from','has','have','how','in','into','is','it','its','latest','may','more',
+  'new','news','not','of','on','over','say','says','than','that','the','their','this','to','today','up','via',
+  'was','what','when','where','who','why','will','with','you','your'
+]);
+
+function articleTokens(text) {
+  return new Set(String(text || '')
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/[^a-z0-9+\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w)));
+}
+
+function setSimilarity(a, b) {
+  if (!a.size || !b.size) return 0;
+  let shared = 0;
+  a.forEach(v => { if (b.has(v)) shared += 1; });
+  return shared / Math.min(a.size, b.size);
+}
+
+const ENTITY_TOKENS = new Set([
+  'adidas','advantage+','amazon','anthropic','apple','chatgpt','claude','creatine','deepmind','facebook','gemini',
+  'google','higgsfield','instagram','jordan','meta','microsoft','nba','nike','openai','padel','shopify','tiktok',
+  'youtube'
+]);
+
+function hasStrongEntityOverlap(a, b, titleScore) {
+  const first = articleTokens(`${a.title} ${a.description}`);
+  const second = articleTokens(`${b.title} ${b.description}`);
+  const shared = [...first].filter(token => second.has(token));
+  const sharedEntities = shared.filter(token => ENTITY_TOKENS.has(token));
+  return sharedEntities.length >= 2 || shared.some(token => token.includes('+'));
+}
+
+function relatedScore(a, b) {
+  const titleA = articleTokens(a.title);
+  const titleB = articleTokens(b.title);
+  const titleScore = setSimilarity(titleA, titleB);
+  if (titleScore >= 0.72) return titleScore;
+  if (hasStrongEntityOverlap(a, b, titleScore)) return 0.62;
+
+  const textA = articleTokens(`${a.title} ${a.description}`);
+  const textB = articleTokens(`${b.title} ${b.description}`);
+  const textScore = setSimilarity(textA, textB);
+  return titleScore * 0.7 + textScore * 0.3;
+}
+
+function articleQualityScore(article) {
+  const source = String(article.source || '').toLowerCase();
+  const link = String(article.link || '').toLowerCase();
+  const descLength = Math.min((article.description || '').length, 900);
+  const titleLength = Math.min((article.title || '').length, 160);
+  const isGoogle = source.includes('google news') || link.includes('news.google.');
+  const hasDescription = descLength > 80 ? 1 : 0;
+  const dateScore = Number.isFinite(Date.parse(article.date)) ? Math.max(0, 1 - ((Date.now() - new Date(article.date)) / 86400000)) : 0;
+  return (isGoogle ? 0 : 140) + descLength + titleLength * 0.35 + hasDescription * 80 + dateScore * 70;
+}
+
+function articleDateMs(article) {
+  const ms = Date.parse(article?.date || '');
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function chooseBestRelatedArticles(articles) {
+  const groups = [];
+  articles
+    .filter(a => a && a.title)
+    .sort((a, b) => articleQualityScore(b) - articleQualityScore(a))
+    .forEach(article => {
+      let match = null;
+      let bestScore = 0;
+      for (const group of groups) {
+        const score = Math.max(...group.items.map(item => relatedScore(article, item)));
+        if (score > bestScore) {
+          bestScore = score;
+          match = group;
+        }
+      }
+      if (match && bestScore >= 0.58) {
+        match.items.push(article);
+        if (articleQualityScore(article) > articleQualityScore(match.best)) match.best = article;
+      } else {
+        groups.push({ best: article, items: [article] });
+      }
+    });
+
+  return groups
+    .map(group => ({
+      ...group.best,
+      relatedCount: group.items.length,
+      relatedSources: [...new Set(group.items.map(a => a.source).filter(Boolean))],
+    }))
+    .sort((a, b) => articleDateMs(b) - articleDateMs(a));
 }
 
 function formatDate(d) {
@@ -959,7 +1247,7 @@ function renderSummary(topic, text) {
   el.innerHTML = parts.map((p, i) => `
     <div class="brief-section">
       <div class="brief-label">${labels[i] || ''}</div>
-      <p class="summary-text">${p.trim()}</p>
+      <p class="summary-text">${escapeHtml(p.trim())}</p>
     </div>`).join('');
 }
 
@@ -975,18 +1263,20 @@ function renderArticles(topic, articles) {
     const sections = a.aiSummary ? a.aiSummary.split('|||') : [];
     const labels = ['📌 What happened','💡 Why it matters','🔎 Context','⏭️ What\'s next'];
     return `
-    <div class="article-card" data-topic="${topic}">
-      <a href="${a.link}" target="_blank" rel="noopener" style="text-decoration:none">
-        <div class="article-source">${a.source}</div>
-        <div class="article-title">${a.title}</div>
-        <div class="article-meta">${formatDate(a.date)}</div>
+    <div class="article-card" data-topic="${escapeAttr(topic)}">
+      <a href="${escapeAttr(a.link)}" target="_blank" rel="noopener" style="text-decoration:none">
+        <div class="article-source">${escapeHtml(a.source)}</div>
+        <div class="article-title">${escapeHtml(a.title)}</div>
+        <div class="article-meta">${escapeHtml(formatDate(a.date))}</div>
+        ${a.angle ? `<div class="article-angle">${escapeHtml(a.angle)}</div>` : ''}
+        ${a.relatedCount > 1 ? `<div class="article-related">Best source from ${a.relatedCount} related articles</div>` : ''}
       </a>
       ${sections.length ? `
       <button class="ai-toggle" id="toggle-${id}" onclick="toggleSummary('${id}')">
         ✦ AI Summary <span class="ai-toggle-chevron">▾</span>
       </button>
       <div class="article-ai-wrap" id="wrap-${id}">
-        ${sections.map((p, i) => `<div class="article-ai-section"><span class="article-ai-label">${labels[i] || ''}</span><p class="article-ai-text">${p.trim()}</p></div>`).join('')}
+        ${sections.map((p, i) => `<div class="article-ai-section"><span class="article-ai-label">${labels[i] || ''}</span><p class="article-ai-text">${escapeHtml(p.trim())}</p></div>`).join('')}
       </div>` : ''}
     </div>`;
   }).join('');
@@ -1019,12 +1309,20 @@ function closeOverlay(e, id) {
 async function fetchTopicSilently(topic) {
   try {
     let articles = await fetchNews(topic);
-    const { summary, articleSummaries } = await generateAIContent(topic, articles);
-    articles = articles.map((a, i) => ({ ...a, aiSummary: articleSummaries[i] || null }));
+    const BATCH = 6;
+    let allSummaries = [];
+    let overallSummary = null;
+    for (let i = 0; i < articles.length; i += BATCH) {
+      const batch = articles.slice(i, i + BATCH);
+      const { summary, articleSummaries } = await generateAIContent(topic, batch, i === 0);
+      if (i === 0) overallSummary = summary;
+      allSummaries = allSummaries.concat(articleSummaries);
+    }
+    articles = articles.map((a, i) => ({ ...a, aiSummary: allSummaries[i] || null }));
     const ts = Date.now();
-    cache[topic] = { ts, articles, summary };
+    cache[topic] = { ts, articles, summary: overallSummary };
     saveCache();
-    saveToArchive(topic, articles, summary);
+    saveToArchive(topic, articles, overallSummary);
   } catch (err) {
     console.error('silent fetch error for', topic, err);
   }
