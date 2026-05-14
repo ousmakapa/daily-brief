@@ -430,6 +430,7 @@ export default function App() {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [savedKey, setSavedKey] = useState('');
   const [keyError, setKeyError] = useState('');
+  const [refreshProgress, setRefreshProgress] = useState(null);
 
   useEffect(() => {
     init();
@@ -629,10 +630,15 @@ export default function App() {
     const cleared = {};
     setData(cleared);
     setLoadingSet(new Set(TOPIC_KEYS));
+    setRefreshProgress({ done: 0, total: TOPIC_KEYS.length, label: 'Starting' });
     let current = cleared;
-    for (const t of TOPIC_KEYS) {
+    for (let i = 0; i < TOPIC_KEYS.length; i += 1) {
+      const t = TOPIC_KEYS[i];
+      setRefreshProgress({ done: i, total: TOPIC_KEYS.length, label: TOPICS[t].label });
       current = await fetchTopic(t, current, key);
+      setRefreshProgress({ done: i + 1, total: TOPIC_KEYS.length, label: TOPICS[t].label });
     }
+    setTimeout(() => setRefreshProgress(null), 1200);
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -826,6 +832,13 @@ export default function App() {
             Get a free key at platform.openai.com — your key stays on your
             device only.
           </Text>
+
+          {!!refreshProgress && (
+            <Text style={s.refreshProgress}>
+              Checked {refreshProgress.done}/{refreshProgress.total}
+              {refreshProgress.done < refreshProgress.total ? ` - ${refreshProgress.label}` : ' - complete'}
+            </Text>
+          )}
 
           <TouchableOpacity style={s.saveBtn} onPress={saveSettings}>
             <Text style={s.saveBtnText}>Save & Refresh</Text>
@@ -1077,6 +1090,12 @@ const s = StyleSheet.create({
     color: '#444466',
     lineHeight: 18,
     marginBottom: 24,
+  },
+  refreshProgress: {
+    fontSize: 12,
+    color: '#7c5cfc',
+    fontWeight: '700',
+    marginBottom: 14,
   },
   saveBtn: {
     backgroundColor: '#7c5cfc',
