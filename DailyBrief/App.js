@@ -298,8 +298,9 @@ const TOPICS = {
 const TOPIC_KEYS = Object.keys(TOPICS);
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const CACHE_TTL = 60 * 60 * 1000;
-const MAX_RANK_CANDIDATES = 30;
-const MAX_ARTICLES = 10;
+const MAX_ARTICLE_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_RANK_CANDIDATES = 75;
+const MAX_ARTICLES = 15;
 const REQUEST_TIMEOUT_MS = 8000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -335,20 +336,12 @@ function timeAgo(dateStr) {
   }
 }
 
-function localDateKey(date = new Date()) {
-  const d = date instanceof Date ? date : new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function isFreshArticle(dateStr) {
   if (!dateStr) return false;
   const ms = Date.parse(dateStr);
   if (!Number.isFinite(ms)) return false;
-  if (ms > Date.now() + 15 * 60 * 1000) return false;
-  return localDateKey(ms) === localDateKey();
+  const age = Date.now() - ms;
+  return age >= -15 * 60 * 1000 && age <= MAX_ARTICLE_AGE_MS;
 }
 
 function withTimeout(promise, ms = REQUEST_TIMEOUT_MS) {
@@ -492,6 +485,10 @@ function sortArticlesByLocalImportance(articles) {
   });
 }
 
+function sortNewestFirst(articles) {
+  return [...articles].sort((a, b) => articleDateMs(b) - articleDateMs(a));
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('ai');
   const [data, setData] = useState({});
@@ -614,6 +611,7 @@ export default function App() {
       articles = apiKey
         ? await rankArticlesByImportance(topic, articles, apiKey)
         : sortArticlesByLocalImportance(articles).slice(0, MAX_ARTICLES);
+      articles = sortNewestFirst(articles);
 
       const summary =
         apiKey && articles.length

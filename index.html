@@ -766,8 +766,9 @@ const PROXIES = [
 const CACHE_KEY  = 'daily_brief_v2';
 const ARCHIVE_KEY = 'daily_brief_archive';
 const CACHE_TTL  = 60 * 60 * 1000;
-const MAX_RANK_CANDIDATES = 30;
-const MAX_ARTICLES = 10;
+const MAX_ARTICLE_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_RANK_CANDIDATES = 75;
+const MAX_ARTICLES = 15;
 const AI_SUMMARY_BATCH_SIZE = 6;
 
 let currentTopic = 'ai';
@@ -775,15 +776,7 @@ let cache = {};
 let isFetching = false;
 
 function todayKey() {
-  return localDateKey();
-}
-
-function localDateKey(date = new Date()) {
-  const d = date instanceof Date ? date : new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return new Date().toISOString().slice(0, 10);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -883,6 +876,7 @@ async function fetchAndRender(topic) {
   try {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
+    articles = sortNewestFirst(articles);
     const BATCH = AI_SUMMARY_BATCH_SIZE;
     let allSummaries = [];
     let allTitles = [];
@@ -912,8 +906,8 @@ function isFreshArticle(dateStr) {
   try {
     const ms = Date.parse(dateStr);
     if (!Number.isFinite(ms)) return false;
-    if (ms > Date.now() + 15 * 60 * 1000) return false;
-    return localDateKey(ms) === todayKey();
+    const age = Date.now() - ms;
+    return age >= -15 * 60 * 1000 && age <= MAX_ARTICLE_AGE_MS;
   } catch { return false; }
 }
 
@@ -1132,6 +1126,10 @@ function sortArticlesByLocalImportance(articles) {
     const scoreB = articleQualityScore(b) + (b.relatedCount || 1) * 35;
     return scoreB - scoreA;
   });
+}
+
+function sortNewestFirst(articles) {
+  return [...articles].sort((a, b) => articleDateMs(b) - articleDateMs(a));
 }
 
 function formatDate(d) {
@@ -1381,6 +1379,7 @@ async function fetchTopicSilently(topic) {
   try {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
+    articles = sortNewestFirst(articles);
     const BATCH = AI_SUMMARY_BATCH_SIZE;
     let allSummaries = [];
     let allTitles = [];
