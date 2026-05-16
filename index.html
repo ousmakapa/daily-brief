@@ -173,6 +173,44 @@
     .spin { display: inline-block; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .refresh-panel {
+      padding: 0 16px 12px;
+    }
+    .refresh-all-btn {
+      width: 100%; padding: 13px; border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text);
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .refresh-select {
+      margin-top: 10px;
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .refresh-choice {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 10px; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface); color: var(--text2);
+      font-size: 12px; font-weight: 700;
+      cursor: pointer; user-select: none;
+    }
+    .refresh-choice input {
+      accent-color: var(--ai);
+      width: 13px; height: 13px;
+    }
+    .refresh-choice:has(input:checked) {
+      color: var(--text); border-color: #3a3a50;
+    }
+    .refresh-select-actions {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    .refresh-select-actions button {
+      border: 0; background: transparent; color: var(--text2);
+      font-size: 12px; font-weight: 700; padding: 4px 0;
+      cursor: pointer;
+    }
+
     /* ── Feed ── */
     .feed { padding: 0 16px; padding-bottom: calc(var(--safe-bottom) + 40px); }
     .feed-header {
@@ -420,14 +458,16 @@
 </div>
 
 <!-- Refresh All button -->
-<div style="padding: 0 16px 12px;">
-  <button id="refresh-all-btn" onclick="refreshAllSections()" style="
-    width:100%; padding:13px; border-radius:14px; border:1.5px solid var(--border);
-    background:var(--surface); color:var(--text); font-size:15px; font-weight:700;
-    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+<div class="refresh-panel">
+  <button id="refresh-all-btn" class="refresh-all-btn" onclick="refreshAllSections()">
     <span id="refresh-all-icon">↻</span>
     <span id="refresh-all-label">Refresh All Sections</span>
   </button>
+  <div class="refresh-select" id="refresh-select"></div>
+  <div class="refresh-select-actions">
+    <button type="button" onclick="setRefreshSelection(true)">Select all</button>
+    <button type="button" onclick="setRefreshSelection(false)">Clear</button>
+  </div>
 </div>
 
 <!-- Summary Card -->
@@ -763,8 +803,9 @@ const PROXIES = [
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
-const CACHE_KEY  = 'daily_brief_v2';
+const CACHE_KEY  = 'daily_brief_v5';
 const ARCHIVE_KEY = 'daily_brief_archive';
+const REFRESH_SELECTION_KEY = 'daily_brief_refresh_sections';
 const CACHE_TTL  = 60 * 60 * 1000;
 const MAX_ARTICLE_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_RANK_CANDIDATES = 75;
@@ -787,6 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
   localStorage.removeItem(ARCHIVE_KEY);
   const k = getApiKey();
   if (k) document.getElementById('api-key-input').value = k;
+  renderRefreshSelector();
   loadTopic('ai');
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 });
@@ -808,6 +850,64 @@ function saveCache() {
 }
 function getApiKey() { return localStorage.getItem('openai_key') || ''; }
 
+function loadRefreshSelection() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(REFRESH_SELECTION_KEY) || 'null');
+    if (Array.isArray(saved)) {
+      return saved.filter(topic => TOPICS[topic]);
+    }
+  } catch {}
+  return Object.keys(TOPICS);
+}
+
+function saveRefreshSelection(topics) {
+  try { localStorage.setItem(REFRESH_SELECTION_KEY, JSON.stringify(topics)); } catch {}
+}
+
+function renderRefreshSelector() {
+  const el = document.getElementById('refresh-select');
+  if (!el) return;
+  const selected = new Set(loadRefreshSelection());
+  el.innerHTML = Object.keys(TOPICS).map(topic => `
+    <label class="refresh-choice">
+      <input type="checkbox" value="${escapeAttr(topic)}" ${selected.has(topic) ? 'checked' : ''} onchange="updateRefreshSelection()" />
+      <span>${TOPICS[topic].emoji} ${escapeHtml(TOPICS[topic].label)}</span>
+    </label>
+  `).join('');
+  updateRefreshButtonLabel();
+}
+
+function getSelectedRefreshTopics() {
+  return Array.from(document.querySelectorAll('#refresh-select input:checked'))
+    .map(input => input.value)
+    .filter(topic => TOPICS[topic]);
+}
+
+function updateRefreshSelection() {
+  saveRefreshSelection(getSelectedRefreshTopics());
+  updateRefreshButtonLabel();
+}
+
+function setRefreshSelection(on) {
+  document.querySelectorAll('#refresh-select input').forEach(input => {
+    input.checked = on;
+  });
+  updateRefreshSelection();
+}
+
+function updateRefreshButtonLabel() {
+  if (isFetching) return;
+  const label = document.getElementById('refresh-all-label');
+  if (!label) return;
+  const count = getSelectedRefreshTopics().length;
+  const total = Object.keys(TOPICS).length;
+  label.textContent = count === total
+    ? 'Refresh All Sections'
+    : count > 0
+      ? `Refresh ${count} Selected`
+      : 'Select Sections';
+}
+
 function sanitizeCache(value) {
   return Object.fromEntries(Object.entries(value || {}).map(([key, item]) => [
     key,
@@ -816,6 +916,10 @@ function sanitizeCache(value) {
       articles: Array.isArray(item?.articles)
         ? item.articles.filter(a => isFreshArticle(a.date)).slice(0, MAX_ARTICLES)
         : [],
+      ts: Array.isArray(item?.articles) && item.articles.every(a => a.aiSummary && a.titleEnglish)
+        && item.summary
+        ? item.ts
+        : 0,
     },
   ]));
 }
@@ -877,18 +981,12 @@ async function fetchAndRender(topic) {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
     articles = sortNewestFirst(articles);
-    const BATCH = AI_SUMMARY_BATCH_SIZE;
-    let allSummaries = [];
-    let allTitles = [];
-    let overallSummary = null;
-    for (let i = 0; i < articles.length; i += BATCH) {
-      const batch = articles.slice(i, i + BATCH);
-      const { summary, articleSummaries, articleTitles } = await generateAIContent(topic, batch, i === 0);
-      if (i === 0) overallSummary = summary;
-      allSummaries = allSummaries.concat(articleSummaries);
-      allTitles = allTitles.concat(articleTitles || []);
-    }
-    articles = articles.map((a, i) => ({ ...a, titleEnglish: allTitles[i] || null, aiSummary: allSummaries[i] || null }));
+    const { overallSummary, allSummaries, allTitles } = await generateArticleAiContent(topic, articles);
+    articles = articles.map((a, i) => ({
+      ...a,
+      titleEnglish: allTitles[i] || a.titleEnglish || null,
+      aiSummary: allSummaries[i] || null,
+    }));
     const ts = Date.now();
     cache[topic] = { ts, articles, summary: overallSummary };
     saveCache();
@@ -1001,6 +1099,29 @@ function compactAiSummary(article) {
     article.context || article.background,
     article.next || article.whats_next || article.outlook,
   ].filter(Boolean).map(value => String(value).trim()).join('|||');
+}
+
+function fallbackAiSummary(article) {
+  const title = article.titleEnglish || article.title || 'This story';
+  const description = article.descriptionEnglish || article.description || 'The source did not provide enough detail for a deeper summary.';
+  return [
+    `${title}. ${description}`,
+    'This item is included because it matched the section topic and was published within the last 24 hours.',
+    'Open the original source for the full details and any live updates.',
+  ].join('|||');
+}
+
+function fallbackBriefSummary(topic, articles) {
+  const topicLabel = TOPICS[topic]?.label || 'this section';
+  const titles = articles.slice(0, 3).map(a => a.titleEnglish || a.title).filter(Boolean);
+  const headline = titles[0]
+    ? `${topicLabel}: ${titles[0]}`
+    : `Latest ${topicLabel} stories are ready.`;
+  const overview = titles.length > 1
+    ? `The newest updates include ${titles.join('; ')}. These stories were selected from articles published in the last 24 hours.`
+    : 'This brief is based on the newest article available in the last 24 hours.';
+  const outlook = 'Open the article summaries below for the key details and follow the original sources for live updates.';
+  return [headline, overview, outlook].join('|||');
 }
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
@@ -1156,7 +1277,7 @@ function formatTs(ts) {
 
 async function generateAIContent(topic, articles, includeBrief = false) {
   const key = getApiKey();
-  const empty = { summary: null, articleSummaries: [] };
+  const empty = { summary: null, articleSummaries: [], articleTitles: [] };
   if (!key || !articles.length) return empty;
 
   const aiArticles = articles; // caller already passes the right batch
@@ -1222,6 +1343,40 @@ Rules: all user-facing output must be in natural English. Translate any non-Engl
   } catch (e) { console.error('generateAIContent exception', e); return empty; }
 }
 
+async function generateArticleAiContent(topic, articles) {
+  const allSummaries = Array(articles.length).fill(null);
+  const allTitles = Array(articles.length).fill(null);
+  let overallSummary = null;
+
+  for (let i = 0; i < articles.length; i += AI_SUMMARY_BATCH_SIZE) {
+    const batch = articles.slice(i, i + AI_SUMMARY_BATCH_SIZE);
+    const { summary, articleSummaries, articleTitles } = await generateAIContent(topic, batch, i === 0);
+    if (i === 0) overallSummary = summary;
+    batch.forEach((_, j) => {
+      allSummaries[i + j] = articleSummaries?.[j] || null;
+      allTitles[i + j] = articleTitles?.[j] || null;
+    });
+  }
+
+  const missing = articles
+    .map((article, index) => ({ article, index }))
+    .filter(({ index }) => !allSummaries[index]);
+
+  for (const { article, index } of missing) {
+    const { articleSummaries, articleTitles } = await generateAIContent(topic, [article], false);
+    allSummaries[index] = articleSummaries?.[0] || fallbackAiSummary(article);
+    allTitles[index] = allTitles[index] || articleTitles?.[0] || article.titleEnglish || article.title;
+  }
+
+  articles.forEach((article, index) => {
+    allSummaries[index] = allSummaries[index] || fallbackAiSummary(article);
+    allTitles[index] = allTitles[index] || article.titleEnglish || article.title;
+  });
+  overallSummary = overallSummary || fallbackBriefSummary(topic, articles);
+
+  return { overallSummary, allSummaries, allTitles };
+}
+
 // ─── Rendering ────────────────────────────────────────────────────────────────
 
 async function rankArticlesByImportance(topic, articles) {
@@ -1249,7 +1404,7 @@ async function rankArticlesByImportance(topic, articles) {
           messages: [
             {
               role: 'system',
-              content: 'You are a news curator scoring articles for a personal news app. Use one simple test: "Would I send this article to a friend who cares deeply about this section?" If yes and it tells them something genuinely new, specific, or useful, score high. If it is generic advice, recycled content, vague opinion, stock-market noise, or off-topic filler, score low. Score 0 for anything clearly off-topic. Return ONLY valid JSON: {"scores":[{"index":0,"score":0,"reason":"short"}]}. Do not add or remove articles.',
+              content: 'You are a news curator scoring articles for a personal news app. Use one simple test: "Would I send this article to a friend who cares deeply about this section?" If yes and it tells them something genuinely new, specific, or useful, score high. If it is generic advice, recycled content, vague opinion, stock-market noise, or off-topic filler, score low. Score 0 for anything clearly off-topic. Return ONLY valid JSON: {"scores":[{"index":0,"score":0,"reason":"short","title_en":"English title"}]}. Translate every title_en into natural English. Do not add or remove articles.',
             },
             {
               role: 'user',
@@ -1265,10 +1420,12 @@ async function rankArticlesByImportance(topic, articles) {
       const parsed = match ? JSON.parse(match[0]) : null;
       const scores = Array.isArray(parsed?.scores) ? parsed.scores : [];
       const scoreMap = new Map(scores.map(item => [Number(item.index), Number(item.score)]));
+      const titleMap = new Map(scores.map(item => [Number(item.index), String(item.title_en || '').trim()]).filter(([, title]) => title));
       batch.forEach((article, i) => {
         const aiScore = scoreMap.has(i) ? scoreMap.get(i) : null;
         scored.push({
           ...article,
+          titleEnglish: titleMap.get(i) || article.titleEnglish || article.title,
           importanceScore: Number.isFinite(aiScore) ? Math.max(0, Math.min(100, aiScore)) : 50,
         });
       });
@@ -1380,18 +1537,12 @@ async function fetchTopicSilently(topic) {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
     articles = sortNewestFirst(articles);
-    const BATCH = AI_SUMMARY_BATCH_SIZE;
-    let allSummaries = [];
-    let allTitles = [];
-    let overallSummary = null;
-    for (let i = 0; i < articles.length; i += BATCH) {
-      const batch = articles.slice(i, i + BATCH);
-      const { summary, articleSummaries, articleTitles } = await generateAIContent(topic, batch, i === 0);
-      if (i === 0) overallSummary = summary;
-      allSummaries = allSummaries.concat(articleSummaries);
-      allTitles = allTitles.concat(articleTitles || []);
-    }
-    articles = articles.map((a, i) => ({ ...a, titleEnglish: allTitles[i] || null, aiSummary: allSummaries[i] || null }));
+    const { overallSummary, allSummaries, allTitles } = await generateArticleAiContent(topic, articles);
+    articles = articles.map((a, i) => ({
+      ...a,
+      titleEnglish: allTitles[i] || a.titleEnglish || null,
+      aiSummary: allSummaries[i] || null,
+    }));
     const ts = Date.now();
     cache[topic] = { ts, articles, summary: overallSummary };
     saveCache();
@@ -1408,9 +1559,15 @@ async function refreshAllSections() {
   const icon  = document.getElementById('refresh-all-icon');
   const label = document.getElementById('refresh-all-label');
   const btn   = document.getElementById('refresh-all-btn');
+  const topics = getSelectedRefreshTopics();
+  if (!topics.length) {
+    label.textContent = 'Select sections to refresh';
+    isFetching = false;
+    setTimeout(updateRefreshButtonLabel, 1600);
+    return;
+  }
   icon.style.display = 'inline-block';
   icon.style.animation = 'spin 0.8s linear infinite';
-  const topics = Object.keys(TOPICS);
   let completed = 0;
   let failed = 0;
   label.textContent = `Refreshing 0/${topics.length} sections`;
@@ -1441,7 +1598,7 @@ async function refreshAllSections() {
     btn.style.opacity = '';
     btn.style.pointerEvents = '';
     isFetching = false;
-    setTimeout(() => { icon.textContent = '↻'; label.textContent = 'Refresh All Sections'; }, 2000);
+    setTimeout(() => { icon.textContent = '↻'; updateRefreshButtonLabel(); }, 2000);
   }
 
   // Render only the currently visible tab from fresh cache

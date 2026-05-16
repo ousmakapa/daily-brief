@@ -297,6 +297,7 @@ const TOPICS = {
 
 const TOPIC_KEYS = Object.keys(TOPICS);
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const DATA_CACHE_KEY = 'cache_v4';
 const CACHE_TTL = 60 * 60 * 1000;
 const MAX_ARTICLE_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_RANK_CANDIDATES = 75;
@@ -358,8 +359,16 @@ function sanitizeCache(cache) {
       key,
       {
         ...value,
+        ts: value?.summary ? value.ts : 0,
         articles: Array.isArray(value?.articles)
-          ? value.articles.filter((article) => isFreshArticle(article.date)).slice(0, MAX_ARTICLES)
+          ? value.articles
+              .filter((article) => isFreshArticle(article.date))
+              .map((article) => ({
+                ...article,
+                titleEnglish: article.titleEnglish || article.title,
+                descriptionEnglish: article.descriptionEnglish || article.description,
+              }))
+              .slice(0, MAX_ARTICLES)
           : [],
       },
     ])
@@ -489,6 +498,17 @@ function sortNewestFirst(articles) {
   return [...articles].sort((a, b) => articleDateMs(b) - articleDateMs(a));
 }
 
+function fallbackBriefText(topic, articles) {
+  const titles = articles.slice(0, 3).map((a) => a.titleEnglish || a.title).filter(Boolean);
+  if (!titles.length) return null;
+  const topicLabel = topic.label || 'This section';
+  return `${topicLabel}: ${titles[0]}. ${
+    titles.length > 1
+      ? `Other fresh stories include ${titles.slice(1).join('; ')}.`
+      : 'This is the freshest story available right now.'
+  } Open the article cards below for the key details and original sources.`;
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('ai');
   const [data, setData] = useState({});
@@ -510,7 +530,7 @@ export default function App() {
   async function init() {
     try {
       const [raw, key] = await Promise.all([
-        AsyncStorage.getItem('cache_v2'),
+        AsyncStorage.getItem(DATA_CACHE_KEY),
         AsyncStorage.getItem('openai_key'),
       ]);
 
@@ -522,7 +542,7 @@ export default function App() {
 
       const cache = sanitizeCache(raw ? JSON.parse(raw) : {});
       setData(cache);
-      await AsyncStorage.setItem('cache_v2', JSON.stringify(cache));
+      await AsyncStorage.setItem(DATA_CACHE_KEY, JSON.stringify(cache));
 
       const now = Date.now();
       const stale = TOPIC_KEYS.filter(
@@ -615,11 +635,11 @@ export default function App() {
 
       const summary =
         apiKey && articles.length
-          ? await generateSummary(topic, articles, apiKey)
-          : null;
+          ? (await generateSummary(topic, articles, apiKey)) || fallbackBriefText(topic, articles)
+          : fallbackBriefText(topic, articles);
 
       const topicResult = { articles, summary, ts: Date.now() };
-      const rawCache = await AsyncStorage.getItem('cache_v2').catch(() => null);
+      const rawCache = await AsyncStorage.getItem(DATA_CACHE_KEY).catch(() => null);
       const storedCache = rawCache ? JSON.parse(rawCache) : {};
       const updated = {
         ...storedCache,
@@ -634,7 +654,7 @@ export default function App() {
         return s;
       });
 
-      await AsyncStorage.setItem('cache_v2', JSON.stringify(updated));
+      await AsyncStorage.setItem(DATA_CACHE_KEY, JSON.stringify(updated));
       return updated;
     } catch (e) {
       console.warn(`Fetch failed for ${topicKey}:`, e.message);
@@ -711,7 +731,7 @@ export default function App() {
               {
                 role: 'system',
                 content:
-                  'You are a news curator scoring articles for a personal news app. Use one simple test: "Would I send this article to a friend who loves this topic?" If yes and it tells them something genuinely new, specific, or impactful, score high (80-100). If it is generic advice, recycled content, vague opinion, or filler they have seen a hundred times, score 0-20. Also score 0 for anything clearly off-topic for the section. Return ONLY valid JSON: {"scores":[{"index":0,"score":0,"reason":"short","title_en":"English title"}]}. Translate every title_en into natural English. Do not add or remove articles.',
+                  'You are a news curator scoring articles for a personal news app. Use one simple test: "Would I send this article to a friend who loves this topic?" If yes and it tells them something genuinely new, specific, or impactful, score high (80-100). If it is generic advice, recycled content, vague opinion, or filler they have seen a hundred times, score 0-20. Also score 0 for anything clearly off-topic for the section. Return ONLY valid JSON: {"scores":[{"index":0,"score":0,"reason":"short","title_en":"English title","description_en":"English description"}]}. Translate every title_en and description_en into natural English. Do not add or remove articles.',
               },
               {
                 role: 'user',
@@ -728,11 +748,13 @@ export default function App() {
         const scores = Array.isArray(parsed?.scores) ? parsed.scores : [];
         const scoreMap = new Map(scores.map((item) => [Number(item.index), Number(item.score)]));
         const titleMap = new Map(scores.map((item) => [Number(item.index), String(item.title_en || '').trim()]).filter(([, title]) => title));
+        const descMap = new Map(scores.map((item) => [Number(item.index), String(item.description_en || '').trim()]).filter(([, desc]) => desc));
         batch.forEach((article, i) => {
           const aiScore = scoreMap.has(i) ? scoreMap.get(i) : null;
           scored.push({
             ...article,
             titleEnglish: titleMap.get(i) || article.title,
+            descriptionEnglish: descMap.get(i) || article.description,
             importanceScore: Number.isFinite(aiScore) ? Math.max(0, Math.min(100, aiScore)) : 50,
           });
         });
@@ -740,6 +762,8 @@ export default function App() {
         console.warn('AI ranking failed; using local ranking for batch', e.message);
         scored.push(...sortArticlesByLocalImportance(batch).map((article, i) => ({
           ...article,
+          titleEnglish: article.titleEnglish || article.title,
+          descriptionEnglish: article.descriptionEnglish || article.description,
           importanceScore: Math.max(1, 70 - i),
         })));
       }
@@ -925,9 +949,9 @@ export default function App() {
                 {item.source}
               </Text>
               <Text style={s.cardTitle}>{item.titleEnglish || item.title}</Text>
-              {!!item.description && (
+              {!!(item.descriptionEnglish || item.description) && (
                 <Text style={s.cardDesc} numberOfLines={2}>
-                  {item.description}
+                  {item.descriptionEnglish || item.description}
                 </Text>
               )}
               <Text style={s.cardDate}>{timeAgo(item.date)}</Text>
