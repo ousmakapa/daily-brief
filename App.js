@@ -177,7 +177,7 @@ const TOPICS = {
     feeds: [
       'https://www.dentistrytoday.com/feed/',
       'https://www.dental-tribune.com/feed/',
-      'https://news.google.com/rss/search?q=dentistry+dental+2025&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=dentistry+dental+latest&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=oral+health+teeth+gum+disease&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=dental+implant+orthodontics+braces&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=dental+technology+AI+dentistry&hl=en-US&gl=US&ceid=US:en',
@@ -201,8 +201,8 @@ const TOPICS = {
       'https://www.architecturaldigest.com/feed/rss',
       'https://www.archpaper.com/feed/',
       'https://www.architecturelab.net/feed/',
-      'https://news.google.com/rss/search?q=architecture+design+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=building+design+construction+2025&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=architecture+design+latest&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=building+design+construction+latest&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=urban+planning+city+design+sustainable&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=architecture+award+prize+Pritzker&hl=en-US&gl=US&ceid=US:en',
     ],
@@ -297,7 +297,11 @@ const TOPICS = {
 
 const TOPIC_KEYS = Object.keys(TOPICS);
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
-const CACHE_TTL = 6 * 60 * 60 * 1000;
+const CACHE_TTL = 60 * 60 * 1000;
+const MAX_ARTICLE_AGE_MS = 72 * 60 * 60 * 1000;
+const MAX_RANK_CANDIDATES = 30;
+const MAX_ARTICLES = 10;
+const REQUEST_TIMEOUT_MS = 8000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -316,17 +320,50 @@ function stripHtml(html = '') {
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   try {
-    const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+    const dateMs = Date.parse(dateStr);
+    if (!Number.isFinite(dateMs)) return '';
+    const diff = Math.floor((Date.now() - dateMs) / 60000);
+    if (diff < 0) return 'just now';
     if (diff < 1) return 'just now';
     if (diff < 60) return `${diff}m ago`;
     if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateMs).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     });
   } catch {
     return '';
   }
+}
+
+function isFreshArticle(dateStr) {
+  if (!dateStr) return false;
+  const ms = Date.parse(dateStr);
+  if (!Number.isFinite(ms)) return false;
+  const age = Date.now() - ms;
+  return age >= -15 * 60 * 1000 && age <= MAX_ARTICLE_AGE_MS;
+}
+
+function withTimeout(promise, ms = REQUEST_TIMEOUT_MS) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('request timed out')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+function sanitizeCache(cache) {
+  return Object.fromEntries(
+    Object.entries(cache || {}).map(([key, value]) => [
+      key,
+      {
+        ...value,
+        articles: Array.isArray(value?.articles)
+          ? value.articles.filter((article) => isFreshArticle(article.date)).slice(0, MAX_ARTICLES)
+          : [],
+      },
+    ])
+  );
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -398,7 +435,7 @@ function articleQualityScore(article) {
   const isGoogle = source.includes('google news') || link.includes('news.google.');
   const hasDescription = descLength > 80 ? 1 : 0;
   const dateScore = Number.isFinite(Date.parse(article.date))
-    ? Math.max(0, 1 - (Date.now() - new Date(article.date)) / 86400000)
+    ? Math.max(0, Math.min(1, 1 - (Date.now() - new Date(article.date)) / 86400000))
     : 0;
   return (isGoogle ? 0 : 140) + descLength + titleLength * 0.35 + hasDescription * 80 + dateScore * 70;
 }
@@ -479,16 +516,20 @@ export default function App() {
         setApiKeyInput(apiKey);
       }
 
-      const cache = raw ? JSON.parse(raw) : {};
+      const cache = sanitizeCache(raw ? JSON.parse(raw) : {});
       setData(cache);
+      await AsyncStorage.setItem('cache_v2', JSON.stringify(cache));
 
       const now = Date.now();
       const stale = TOPIC_KEYS.filter(
         (t) => !cache[t] || now - cache[t].ts > CACHE_TTL
       );
 
-      await Promise.all(stale.map((t) => fetchTopic(t, cache, apiKey)));
-      setLoadingSet(new Set());
+      const firstBatch = stale.slice(0, 3);
+      const rest = stale.slice(3);
+      await Promise.all(firstBatch.map((t) => fetchTopic(t, cache, apiKey)));
+      setLoadingSet(new Set(rest));
+      rest.forEach((t) => fetchTopic(t, cache, apiKey));
     } catch (e) {
       console.error('Init error:', e);
       setLoadingSet(new Set());
@@ -525,7 +566,7 @@ export default function App() {
       const results = await Promise.allSettled(
         topic.feeds.map((feedConfig) => {
           const feed = typeof feedConfig === 'string' ? { url: feedConfig } : feedConfig;
-          return fetch(`${RSS_API}${encodeURIComponent(feed.url)}`)
+          return withTimeout(fetch(`${RSS_API}${encodeURIComponent(feed.url)}`))
             .then((r) => r.json())
             .then((d) => {
               if (d.status !== 'ok') return [];
@@ -553,6 +594,7 @@ export default function App() {
         .flatMap((r) => r.value)
         .filter((a) => {
           if (!a.title) return false;
+          if (!isFreshArticle(a.date)) return false;
           const haystack = `${a.title} ${a.description}`.toLowerCase();
           if (topic.excludeTerms?.some((term) => haystack.includes(term.toLowerCase()))) {
             return false;
@@ -564,19 +606,23 @@ export default function App() {
         }));
       articles = apiKey
         ? await rankArticlesByImportance(topic, articles, apiKey)
-        : sortArticlesByLocalImportance(articles).slice(0, 15);
+        : sortArticlesByLocalImportance(articles).slice(0, MAX_ARTICLES);
 
       const summary =
         apiKey && articles.length
           ? await generateSummary(topic, articles, apiKey)
           : null;
 
+      const topicResult = { articles, summary, ts: Date.now() };
+      const rawCache = await AsyncStorage.getItem('cache_v2').catch(() => null);
+      const storedCache = rawCache ? JSON.parse(rawCache) : {};
       const updated = {
+        ...storedCache,
         ...currentData,
-        [topicKey]: { articles, summary, ts: Date.now() },
+        [topicKey]: topicResult,
       };
 
-      setData({ ...updated });
+      setData((prev) => ({ ...prev, [topicKey]: topicResult }));
       setLoadingSet((prev) => {
         const s = new Set(prev);
         s.delete(topicKey);
@@ -604,7 +650,7 @@ export default function App() {
       .map((a, i) => `${i + 1}. ${a.title}`)
       .join('\n');
     try {
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      const resp = await withTimeout(fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -625,7 +671,7 @@ export default function App() {
             },
           ],
         }),
-      });
+      }), 15000);
       if (!resp.ok) return null;
       const json = await resp.json();
       return json.choices?.[0]?.message?.content?.trim() || null;
@@ -636,9 +682,10 @@ export default function App() {
 
   async function rankArticlesByImportance(topic, articles, apiKey) {
     if (!articles.length) return [];
-    if (!apiKey) return sortArticlesByLocalImportance(articles).slice(0, 15);
+    if (!apiKey) return sortArticlesByLocalImportance(articles).slice(0, MAX_ARTICLES);
 
-    const CHUNK = 30;
+    articles = sortArticlesByLocalImportance(articles).slice(0, MAX_RANK_CANDIDATES);
+    const CHUNK = 20;
     const scored = [];
     for (let offset = 0; offset < articles.length; offset += CHUNK) {
       const batch = articles.slice(offset, offset + CHUNK);
@@ -646,7 +693,7 @@ export default function App() {
         `[${i}] "${a.title}"\nSource: ${a.source || 'Unknown'}\n${a.description ? a.description.slice(0, 260) : 'No description'}`
       ).join('\n\n');
       try {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        const resp = await withTimeout(fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -667,7 +714,7 @@ export default function App() {
               },
             ],
           }),
-        });
+        }), 15000);
         if (!resp.ok) throw new Error(`rank API ${resp.status}`);
         const json = await resp.json();
         const raw = json.choices?.[0]?.message?.content?.trim() || '';
@@ -694,7 +741,7 @@ export default function App() {
     return scored.sort((a, b) =>
       (b.importanceScore || 0) - (a.importanceScore || 0) ||
       articleQualityScore(b) - articleQualityScore(a)
-    ).slice(0, 15);
+    ).slice(0, MAX_ARTICLES);
   }
 
   // ─── Pull to refresh ───────────────────────────────────────────────────────
@@ -704,8 +751,11 @@ export default function App() {
     const cleared = { ...data };
     delete cleared[activeTab];
     setLoadingSet(new Set([activeTab]));
-    await fetchTopic(activeTab, cleared);
-    setRefreshing(false);
+    try {
+      await fetchTopic(activeTab, cleared);
+    } finally {
+      setRefreshing(false);
+    }
   }, [activeTab, data]);
 
   // ─── Settings ──────────────────────────────────────────────────────────────
@@ -728,11 +778,14 @@ export default function App() {
     setLoadingSet(new Set(TOPIC_KEYS));
     setRefreshProgress({ done: 0, total: TOPIC_KEYS.length, label: 'Starting' });
     let current = cleared;
-    for (let i = 0; i < TOPIC_KEYS.length; i += 1) {
-      const t = TOPIC_KEYS[i];
-      setRefreshProgress({ done: i, total: TOPIC_KEYS.length, label: TOPICS[t].label });
-      current = await fetchTopic(t, current, key);
-      setRefreshProgress({ done: i + 1, total: TOPIC_KEYS.length, label: TOPICS[t].label });
+    let done = 0;
+    for (let i = 0; i < TOPIC_KEYS.length; i += 3) {
+      const batch = TOPIC_KEYS.slice(i, i + 3);
+      setRefreshProgress({ done, total: TOPIC_KEYS.length, label: batch.map((t) => TOPICS[t].label).join(', ') });
+      const results = await Promise.all(batch.map((t) => fetchTopic(t, current, key)));
+      current = Object.assign({}, current, ...results);
+      done += batch.length;
+      setRefreshProgress({ done, total: TOPIC_KEYS.length, label: batch.map((t) => TOPICS[t].label).join(', ') });
     }
     setTimeout(() => setRefreshProgress(null), 1200);
   }

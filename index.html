@@ -678,7 +678,7 @@ const TOPICS = {
   dent: {
     label: 'Dentistry', emoji: '🦷',
     feeds: [
-      'https://news.google.com/rss/search?q=dentistry+dental+2025&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=dentistry+dental+latest&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=oral+health+teeth+gum+disease&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=dental+implant+orthodontics+braces&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=dental+technology+AI+dentistry&hl=en-US&gl=US&ceid=US:en',
@@ -693,8 +693,8 @@ const TOPICS = {
   arch: {
     label: 'Architecture', emoji: '🏛️',
     feeds: [
-      'https://news.google.com/rss/search?q=architecture+design+2025&hl=en-US&gl=US&ceid=US:en',
-      'https://news.google.com/rss/search?q=building+design+construction+2025&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=architecture+design+latest&hl=en-US&gl=US&ceid=US:en',
+      'https://news.google.com/rss/search?q=building+design+construction+latest&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=urban+planning+city+design+sustainable&hl=en-US&gl=US&ceid=US:en',
       'https://news.google.com/rss/search?q=architecture+award+prize+Pritzker&hl=en-US&gl=US&ceid=US:en',
       'https://feeds.feedburner.com/dezeen',
@@ -785,8 +785,11 @@ const PROXIES = [
 ];
 const CACHE_KEY  = 'daily_brief_v2';
 const ARCHIVE_KEY = 'daily_brief_archive';
-const CACHE_TTL  = 7 * 24 * 60 * 60 * 1000;
+const CACHE_TTL  = 60 * 60 * 1000;
 const MAX_DAYS   = 7;
+const MAX_ARTICLE_AGE_MS = 72 * 60 * 60 * 1000;
+const MAX_RANK_CANDIDATES = 30;
+const MAX_ARTICLES = 10;
 
 let currentTopic = 'ai';
 let cache = {};
@@ -850,12 +853,28 @@ function updateDateLabel() {
 }
 
 function loadCache() {
-  try { const r = localStorage.getItem(CACHE_KEY); if (r) cache = JSON.parse(r); } catch {}
+  try {
+    const r = localStorage.getItem(CACHE_KEY);
+    if (r) cache = sanitizeCache(JSON.parse(r));
+    saveCache();
+  } catch {}
 }
 function saveCache() {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
 }
 function getApiKey() { return localStorage.getItem('openai_key') || ''; }
+
+function sanitizeCache(value) {
+  return Object.fromEntries(Object.entries(value || {}).map(([key, item]) => [
+    key,
+    {
+      ...item,
+      articles: Array.isArray(item?.articles)
+        ? item.articles.filter(a => isFreshArticle(a.date)).slice(0, MAX_ARTICLES)
+        : [],
+    },
+  ]));
+}
 
 // ─── Tab switching ────────────────────────────────────────────────────────────
 
@@ -938,8 +957,7 @@ async function fetchAndRender(topic) {
   try {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
-    // Batch AI calls: 6 articles per batch so every article gets a summary
-    const BATCH = 6;
+    const BATCH = MAX_ARTICLES;
     let allSummaries = [];
     let overallSummary = null;
     for (let i = 0; i < articles.length; i += BATCH) {
@@ -963,14 +981,14 @@ async function fetchAndRender(topic) {
 
 // ─── News fetching ────────────────────────────────────────────────────────────
 
-function isToday(dateStr) {
-  if (!dateStr) return true; // keep articles with no date
+function isFreshArticle(dateStr) {
+  if (!dateStr) return false;
   try {
-    const d = new Date(dateStr);
-    const now = new Date();
-    // Keep articles from last 24 hours
-    return (now - d) < 24 * 60 * 60 * 1000;
-  } catch { return true; }
+    const ms = Date.parse(dateStr);
+    if (!Number.isFinite(ms)) return false;
+    const age = Date.now() - ms;
+    return age >= -15 * 60 * 1000 && age <= MAX_ARTICLE_AGE_MS;
+  } catch { return false; }
 }
 
 async function fetchNews(topic) {
@@ -986,15 +1004,16 @@ async function fetchNews(topic) {
       if (config.requireTerms?.length && !config.requireTerms.some(term => haystack.includes(term.toLowerCase()))) return false;
       return true;
     });
-  return chooseBestRelatedArticles(all.filter(a => isToday(a.date)));
+  return chooseBestRelatedArticles(all.filter(a => isFreshArticle(a.date)));
 }
 
 async function fetchFeed(url) {
   const feed = typeof url === 'string' ? { url } : url;
   for (const proxyFn of PROXIES) {
+    let timer;
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 9000);
+      timer = setTimeout(() => controller.abort(), 8000);
       const resp = await fetch(proxyFn(feed.url), { signal: controller.signal });
       clearTimeout(timer);
       if (!resp.ok) continue;
@@ -1026,7 +1045,10 @@ async function fetchFeed(url) {
         };
       }).filter(a => a.title);
       if (results.length) return results;
-    } catch { continue; }
+    } catch {
+      if (timer) clearTimeout(timer);
+      continue;
+    }
   }
   return [];
 }
@@ -1046,6 +1068,16 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#096;');
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function parseArticleTitleAndSource(title, fallbackSource) {
@@ -1114,7 +1146,7 @@ function articleQualityScore(article) {
   const titleLength = Math.min((article.title || '').length, 160);
   const isGoogle = source.includes('google news') || link.includes('news.google.');
   const hasDescription = descLength > 80 ? 1 : 0;
-  const dateScore = Number.isFinite(Date.parse(article.date)) ? Math.max(0, 1 - ((Date.now() - new Date(article.date)) / 86400000)) : 0;
+  const dateScore = Number.isFinite(Date.parse(article.date)) ? Math.max(0, Math.min(1, 1 - ((Date.now() - new Date(article.date)) / 86400000))) : 0;
   return (isGoogle ? 0 : 140) + descLength + titleLength * 0.35 + hasDescription * 80 + dateScore * 70;
 }
 
@@ -1166,11 +1198,14 @@ function sortArticlesByLocalImportance(articles) {
 function formatDate(d) {
   if (!d) return '';
   try {
-    const diff = Math.floor((Date.now() - new Date(d)) / 60000);
+    const ms = Date.parse(d);
+    if (!Number.isFinite(ms)) return '';
+    const diff = Math.floor((Date.now() - ms) / 60000);
+    if (diff < 0) return 'just now';
     if (diff < 1) return 'just now';
     if (diff < 60) return `${diff}m ago`;
     if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
-    return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric'});
   } catch { return ''; }
 }
 
@@ -1193,7 +1228,7 @@ async function generateAIContent(topic, articles, includeBrief = false) {
   ).join('\n\n');
 
   try {
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
       body: JSON.stringify({
@@ -1252,10 +1287,11 @@ Rules: write like The Economist — precise, insightful, specific. Never restate
 async function rankArticlesByImportance(topic, articles) {
   const key = getApiKey();
   if (!articles.length) return [];
-  if (!key) return sortArticlesByLocalImportance(articles).slice(0, 15);
+  if (!key) return sortArticlesByLocalImportance(articles).slice(0, MAX_ARTICLES);
 
   const config = TOPICS[topic];
-  const CHUNK = 30;
+  articles = sortArticlesByLocalImportance(articles).slice(0, MAX_RANK_CANDIDATES);
+  const CHUNK = 20;
   const scored = [];
   for (let offset = 0; offset < articles.length; offset += CHUNK) {
     const batch = articles.slice(offset, offset + CHUNK);
@@ -1264,7 +1300,7 @@ async function rankArticlesByImportance(topic, articles) {
     ).join('\n\n');
 
     try {
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
         body: JSON.stringify({
@@ -1308,7 +1344,7 @@ async function rankArticlesByImportance(topic, articles) {
   return scored.sort((a, b) =>
     (b.importanceScore || 0) - (a.importanceScore || 0) ||
     articleQualityScore(b) - articleQualityScore(a)
-  ).slice(0, 15);
+  ).slice(0, MAX_ARTICLES);
 }
 
 function renderAll(topic, articles, summary, ts) {
@@ -1403,7 +1439,7 @@ async function fetchTopicSilently(topic) {
   try {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
-    const BATCH = 6;
+    const BATCH = MAX_ARTICLES;
     let allSummaries = [];
     let overallSummary = null;
     for (let i = 0; i < articles.length; i += BATCH) {
