@@ -298,7 +298,6 @@ const TOPICS = {
 const TOPIC_KEYS = Object.keys(TOPICS);
 const RSS_API = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const CACHE_TTL = 60 * 60 * 1000;
-const MAX_ARTICLE_AGE_MS = 72 * 60 * 60 * 1000;
 const MAX_RANK_CANDIDATES = 30;
 const MAX_ARTICLES = 10;
 const REQUEST_TIMEOUT_MS = 8000;
@@ -336,12 +335,20 @@ function timeAgo(dateStr) {
   }
 }
 
+function localDateKey(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function isFreshArticle(dateStr) {
   if (!dateStr) return false;
   const ms = Date.parse(dateStr);
   if (!Number.isFinite(ms)) return false;
-  const age = Date.now() - ms;
-  return age >= -15 * 60 * 1000 && age <= MAX_ARTICLE_AGE_MS;
+  if (ms > Date.now() + 15 * 60 * 1000) return false;
+  return localDateKey(ms) === localDateKey();
 }
 
 function withTimeout(promise, ms = REQUEST_TIMEOUT_MS) {
@@ -663,7 +670,7 @@ export default function App() {
             {
               role: 'system',
               content:
-                'You are a sharp, concise news briefer. Write in an engaging clear style with no bullet points.',
+                'You are a sharp, concise news briefer. Write all user-facing output in natural English. Translate any non-English source text into English. Use an engaging clear style with no bullet points.',
             },
             {
               role: 'user',
@@ -706,7 +713,7 @@ export default function App() {
               {
                 role: 'system',
                 content:
-                  'You are a news curator scoring articles for a personal news app. Use one simple test: "Would I send this article to a friend who loves this topic?" If yes and it tells them something genuinely new, specific, or impactful — score high (80-100). If it is generic advice, recycled content, vague opinion, or filler they have seen a hundred times — score 0-20. Also score 0 for anything clearly off-topic for the section. Return ONLY valid JSON: {"scores":[{"index":0,"score":0,"reason":"short"}]}. Do not add or remove articles.',
+                  'You are a news curator scoring articles for a personal news app. Use one simple test: "Would I send this article to a friend who loves this topic?" If yes and it tells them something genuinely new, specific, or impactful, score high (80-100). If it is generic advice, recycled content, vague opinion, or filler they have seen a hundred times, score 0-20. Also score 0 for anything clearly off-topic for the section. Return ONLY valid JSON: {"scores":[{"index":0,"score":0,"reason":"short","title_en":"English title"}]}. Translate every title_en into natural English. Do not add or remove articles.',
               },
               {
                 role: 'user',
@@ -722,10 +729,12 @@ export default function App() {
         const parsed = match ? JSON.parse(match[0]) : null;
         const scores = Array.isArray(parsed?.scores) ? parsed.scores : [];
         const scoreMap = new Map(scores.map((item) => [Number(item.index), Number(item.score)]));
+        const titleMap = new Map(scores.map((item) => [Number(item.index), String(item.title_en || '').trim()]).filter(([, title]) => title));
         batch.forEach((article, i) => {
           const aiScore = scoreMap.has(i) ? scoreMap.get(i) : null;
           scored.push({
             ...article,
+            titleEnglish: titleMap.get(i) || article.title,
             importanceScore: Number.isFinite(aiScore) ? Math.max(0, Math.min(100, aiScore)) : 50,
           });
         });
@@ -917,7 +926,7 @@ export default function App() {
               <Text style={[s.cardSource, { color: topic.color }]}>
                 {item.source}
               </Text>
-              <Text style={s.cardTitle}>{item.title}</Text>
+              <Text style={s.cardTitle}>{item.titleEnglish || item.title}</Text>
               {!!item.description && (
                 <Text style={s.cardDesc} numberOfLines={2}>
                   {item.description}

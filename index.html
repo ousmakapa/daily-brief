@@ -97,23 +97,6 @@
     .tab[data-topic="perf"].active   { background: var(--perf); color: #000; }
     .tab[data-topic="higgs"].active  { background: var(--higgs); color: #000; }
 
-    /* ── Date strip ── */
-    .date-strip {
-      display: flex; gap: 8px; padding: 0 16px 14px;
-      overflow-x: auto; scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .date-strip::-webkit-scrollbar { display: none; }
-    .date-pill {
-      flex-shrink: 0; padding: 6px 14px; border-radius: 100px;
-      font-size: 13px; font-weight: 600;
-      border: 1.5px solid var(--border);
-      background: var(--surface); color: var(--text2);
-      cursor: pointer; white-space: nowrap;
-    }
-    .date-pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
-    .date-pill.has-data { border-color: #3a3a50; color: var(--text); }
-
     /* ── Summary Card ── */
     .summary-wrap { padding: 0 16px 12px; }
     .summary-card {
@@ -446,9 +429,6 @@
     <span id="refresh-all-label">Refresh All Sections</span>
   </button>
 </div>
-
-<!-- Date strip -->
-<div class="date-strip" id="date-strip"></div>
 
 <!-- Summary Card -->
 <div class="summary-wrap">
@@ -786,52 +766,24 @@ const PROXIES = [
 const CACHE_KEY  = 'daily_brief_v2';
 const ARCHIVE_KEY = 'daily_brief_archive';
 const CACHE_TTL  = 60 * 60 * 1000;
-const MAX_DAYS   = 7;
-const MAX_ARTICLE_AGE_MS = 72 * 60 * 60 * 1000;
 const MAX_RANK_CANDIDATES = 30;
 const MAX_ARTICLES = 10;
+const AI_SUMMARY_BATCH_SIZE = 6;
 
 let currentTopic = 'ai';
 let cache = {};
-let archive = {};
 let isFetching = false;
-let viewingDate = todayKey();
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
-function loadArchive() {
-  try { const r = localStorage.getItem(ARCHIVE_KEY); if (r) archive = JSON.parse(r); } catch {}
-}
-
-function saveToArchive(topic, articles, summary) {
-  const day = todayKey();
-  if (!archive[day]) archive[day] = {};
-  archive[day][topic] = { articles, summary };
-  // Keep only last MAX_DAYS
-  const keys = Object.keys(archive).sort().reverse();
-  if (keys.length > MAX_DAYS) keys.slice(MAX_DAYS).forEach(k => delete archive[k]);
-  try { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive)); } catch {}
-}
-
-function renderDateStrip() {
-  const strip = document.getElementById('date-strip');
-  const today = todayKey();
-  // Build list: today + past 6 days
-  const days = [];
-  for (let i = 0; i < MAX_DAYS; i++) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
-  }
-  strip.innerHTML = days.map(day => {
-    const isToday = day === today;
-    const isActive = day === viewingDate;
-    const hasData = !!archive[day]?.[currentTopic];
-    const label = isToday ? 'Today' : new Date(day + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return `<button class="date-pill${isActive ? ' active' : ''}${hasData && !isActive ? ' has-data' : ''}"
-      onclick="viewDate('${day}')">${label}</button>`;
-  }).join('');
+function localDateKey(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -839,10 +791,9 @@ function renderDateStrip() {
 document.addEventListener('DOMContentLoaded', () => {
   updateDateLabel();
   loadCache();
-  loadArchive();
+  localStorage.removeItem(ARCHIVE_KEY);
   const k = getApiKey();
   if (k) document.getElementById('api-key-input').value = k;
-  renderDateStrip();
   loadTopic('ai');
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 });
@@ -885,32 +836,7 @@ function switchTab(topic) {
   document.getElementById('summary-card').dataset.topic = topic;
   document.getElementById('check-now-btn').dataset.topic = topic;
   document.getElementById('feed-header').textContent = `${TOPICS[topic].emoji} ${TOPICS[topic].label} News`;
-  renderDateStrip();
-  if (viewingDate === todayKey()) {
-    loadTopic(topic);
-  } else {
-    viewDate(viewingDate);
-  }
-}
-
-function viewDate(day) {
-  viewingDate = day;
-  renderDateStrip();
-  if (day === todayKey()) {
-    loadTopic(currentTopic);
-    document.getElementById('check-now-btn').style.display = '';
-    return;
-  }
-  document.getElementById('check-now-btn').style.display = 'none';
-  const dayData = archive[day]?.[currentTopic];
-  if (dayData) {
-    renderAll(currentTopic, dayData.articles, dayData.summary, null);
-    const label = new Date(day + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-    document.getElementById('last-updated').textContent = label;
-  } else {
-    renderAll(currentTopic, [], null, null);
-    document.getElementById('last-updated').textContent = 'No data saved for this day yet.';
-  }
+  loadTopic(topic);
 }
 
 // ─── Load / Check Now ─────────────────────────────────────────────────────────
@@ -957,21 +883,21 @@ async function fetchAndRender(topic) {
   try {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
-    const BATCH = MAX_ARTICLES;
+    const BATCH = AI_SUMMARY_BATCH_SIZE;
     let allSummaries = [];
+    let allTitles = [];
     let overallSummary = null;
     for (let i = 0; i < articles.length; i += BATCH) {
       const batch = articles.slice(i, i + BATCH);
-      const { summary, articleSummaries } = await generateAIContent(topic, batch, i === 0);
+      const { summary, articleSummaries, articleTitles } = await generateAIContent(topic, batch, i === 0);
       if (i === 0) overallSummary = summary;
       allSummaries = allSummaries.concat(articleSummaries);
+      allTitles = allTitles.concat(articleTitles || []);
     }
-    articles = articles.map((a, i) => ({ ...a, aiSummary: allSummaries[i] || null }));
+    articles = articles.map((a, i) => ({ ...a, titleEnglish: allTitles[i] || null, aiSummary: allSummaries[i] || null }));
     const ts = Date.now();
     cache[topic] = { ts, articles, summary: overallSummary };
     saveCache();
-    saveToArchive(topic, articles, overallSummary);
-    renderDateStrip();
     renderAll(topic, articles, overallSummary, ts);
   } catch (err) {
     console.error(err);
@@ -986,8 +912,8 @@ function isFreshArticle(dateStr) {
   try {
     const ms = Date.parse(dateStr);
     if (!Number.isFinite(ms)) return false;
-    const age = Date.now() - ms;
-    return age >= -15 * 60 * 1000 && age <= MAX_ARTICLE_AGE_MS;
+    if (ms > Date.now() + 15 * 60 * 1000) return false;
+    return localDateKey(ms) === todayKey();
   } catch { return false; }
 }
 
@@ -1068,6 +994,19 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#096;');
+}
+
+function compactAiSummary(article) {
+  if (typeof article === 'string') return article.trim();
+  if (!article || typeof article !== 'object') return '';
+  const direct = article.summary || article.aiSummary || article.analysis;
+  if (direct) return String(direct).trim();
+  return [
+    article.what || article.what_happened || article.happened,
+    article.why || article.why_it_matters || article.importance,
+    article.context || article.background,
+    article.next || article.whats_next || article.outlook,
+  ].filter(Boolean).map(value => String(value).trim()).join('|||');
 }
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
@@ -1246,6 +1185,7 @@ async function generateAIContent(topic, articles, includeBrief = false) {
   },` : '"brief": null,'}
   "articles": [
     {
+      "title": "English title. Translate if needed, otherwise lightly clean the original title.",
       "what": "2 sentences: exactly what happened, who is involved, key facts and numbers.",
       "why": "2 sentences: why this matters, what the impact or stakes are.",
       "context": "1-2 sentences: background that explains why this is happening now.",
@@ -1254,7 +1194,7 @@ async function generateAIContent(topic, articles, includeBrief = false) {
   ]
 }
 
-Rules: write like The Economist — precise, insightful, specific. Never restate the headline. Use names, numbers, places. No bullet points, no markdown.`,
+Rules: all user-facing output must be in natural English. Translate any non-English article title or source text into English. Write like The Economist — precise, insightful, specific. Never restate the headline. Use names, numbers, places. No bullet points, no markdown.`,
           },
           {
             role: 'user',
@@ -1275,10 +1215,12 @@ Rules: write like The Economist — precise, insightful, specific. Never restate
     const parsed = JSON.parse(match[0]);
     const b = parsed.brief;
     const summary = b ? (typeof b === 'string' ? b : [b.headline, b.overview, b.outlook].filter(Boolean).join('|||')) : null;
-    const articleSummaries = Array.isArray(parsed.articles) ? parsed.articles.map(a =>
-      typeof a === 'string' ? a : [a.what, a.why, a.context, a.next].filter(Boolean).join('|||')
-    ) : [];
-    return { summary, articleSummaries };
+    const parsedArticles = Array.isArray(parsed.articles) ? parsed.articles : [];
+    const articleSummaries = parsedArticles.map(compactAiSummary);
+    const articleTitles = parsedArticles.map(a =>
+      typeof a === 'object' && a?.title ? String(a.title).trim() : null
+    );
+    return { summary, articleSummaries, articleTitles };
   } catch (e) { console.error('generateAIContent exception', e); return empty; }
 }
 
@@ -1389,13 +1331,13 @@ function renderArticles(topic, articles) {
   const uid = () => Math.random().toString(36).slice(2, 8);
   list.innerHTML = articles.map(a => {
     const id = uid();
-    const sections = a.aiSummary ? a.aiSummary.split('|||') : [];
+    const sections = a.aiSummary ? a.aiSummary.split('|||').map(p => p.trim()).filter(Boolean) : [];
     const labels = ['📌 What happened','💡 Why it matters','🔎 Context','⏭️ What\'s next'];
     return `
     <div class="article-card" data-topic="${escapeAttr(topic)}">
       <a href="${escapeAttr(a.link)}" target="_blank" rel="noopener" style="text-decoration:none">
         <div class="article-source">${escapeHtml(a.source)}</div>
-        <div class="article-title">${escapeHtml(a.title)}</div>
+        <div class="article-title">${escapeHtml(a.titleEnglish || a.title)}</div>
         <div class="article-meta">${escapeHtml(formatDate(a.date))}</div>
         ${a.angle ? `<div class="article-angle">${escapeHtml(a.angle)}</div>` : ''}
         ${a.relatedCount > 1 ? `<div class="article-related">Best source from ${a.relatedCount} related articles</div>` : ''}
@@ -1405,7 +1347,7 @@ function renderArticles(topic, articles) {
         ✦ AI Summary <span class="ai-toggle-chevron">▾</span>
       </button>
       <div class="article-ai-wrap" id="wrap-${id}">
-        ${sections.map((p, i) => `<div class="article-ai-section"><span class="article-ai-label">${labels[i] || ''}</span><p class="article-ai-text">${escapeHtml(p.trim())}</p></div>`).join('')}
+        ${sections.map((p, i) => `<div class="article-ai-section"><span class="article-ai-label">${labels[i] || ''}</span><p class="article-ai-text">${escapeHtml(p)}</p></div>`).join('')}
       </div>` : ''}
     </div>`;
   }).join('');
@@ -1439,20 +1381,21 @@ async function fetchTopicSilently(topic) {
   try {
     let articles = await fetchNews(topic);
     articles = await rankArticlesByImportance(topic, articles);
-    const BATCH = MAX_ARTICLES;
+    const BATCH = AI_SUMMARY_BATCH_SIZE;
     let allSummaries = [];
+    let allTitles = [];
     let overallSummary = null;
     for (let i = 0; i < articles.length; i += BATCH) {
       const batch = articles.slice(i, i + BATCH);
-      const { summary, articleSummaries } = await generateAIContent(topic, batch, i === 0);
+      const { summary, articleSummaries, articleTitles } = await generateAIContent(topic, batch, i === 0);
       if (i === 0) overallSummary = summary;
       allSummaries = allSummaries.concat(articleSummaries);
+      allTitles = allTitles.concat(articleTitles || []);
     }
-    articles = articles.map((a, i) => ({ ...a, aiSummary: allSummaries[i] || null }));
+    articles = articles.map((a, i) => ({ ...a, titleEnglish: allTitles[i] || null, aiSummary: allSummaries[i] || null }));
     const ts = Date.now();
     cache[topic] = { ts, articles, summary: overallSummary };
     saveCache();
-    saveToArchive(topic, articles, overallSummary);
     return { ok: true, topic, articles, summary: overallSummary, ts };
   } catch (err) {
     console.error('silent fetch error for', topic, err);
@@ -1487,7 +1430,6 @@ async function refreshAllSections() {
       label.textContent = failed
         ? `${completed}/${topics.length} checked (${failed} failed)`
         : `${completed}/${topics.length} checked`;
-      renderDateStrip();
       if (topic === currentTopic && result.ok) {
         renderAll(topic, result.articles, result.summary, result.ts);
       }
@@ -1506,7 +1448,6 @@ async function refreshAllSections() {
   // Render only the currently visible tab from fresh cache
   const fresh = cache[currentTopic];
   if (fresh) renderAll(currentTopic, fresh.articles, fresh.summary, fresh.ts);
-  renderDateStrip();
 }
 
 function saveSettings() {
